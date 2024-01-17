@@ -1,0 +1,121 @@
+---
+title: |
+  |  \Large Indian Premier League Cricket
+author: | 
+  | \large Matt Stuart$^{1,2}$, Hassan Raffique$^{3}$, Leigha DeRango$^1$
+  | \large Gregory J. Matthews$^{1,2}$
+  | \vspace{-1.1mm}
+  | \large $^1$ Department of Mathematics and Statistics, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
+  | \large $^2$ Center for Data Science and Consulting, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
+  | \large $^3$ Univsersiry of Iowa, Iowa City, IA \vspace{-1.1mm}
+  | \large $^+$ Corresponding: mstaurt@luc.edu \vspace{-1.1mm}
+abstract: |
+  | Wicked Googly \vspace{2mm}
+  | *Keywords*: Cricket
+bibliography: references.bib
+fontsize: 12pt
+link-citations: true
+linkcolor: cyan
+urlcolor: cyan
+output:
+  pdf_document:
+    df_print: kable
+    number_sections: true
+    keep_tex: true
+header-includes:
+ \usepackage{setspace}
+ \setstretch{1.15}
+ \usepackage{float}
+ \floatplacement{figure}{t}
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+
+gjm <- function(x, color = "red") {
+  sprintf("\\textcolor{%s}{%s}", color, x)}
+```
+
+\newcommand{\iid}{\overset{iid}{\sim}}
+
+```{r pkgs}
+library(tidyverse)
+theme_set(theme_minimal())
+```
+
+\newpage
+
+# Introduction {#sec:intro}
+openWAR and cricWAR.  
+
+In the game of cricket, the number of runs scored on a particular pitch typically ranges between 0 and 6 (though theoretically values larger than 6 are possible, they are rare and do not occur at all in our particular data set).  
+
+# Data {#sec:data}
+
+
+```{r echo = FALSE}
+ipl <- read.csv("/Users/gregorymatthews/Dropbox/cricketIPL/data/IPL_Data.csv")
+library(tidyverse)
+
+#table(ipl$season)
+#Are the teams  from Delhi and Pujarat separate teams?  Or same team different name?  
+#ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(batting_team) %>% summarise(n = n())
+#ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(season) %>% summarise(n = n()) 
+```
+
+```{r}
+ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(season) %>% summarise(n = n()) 
+```
+
+We have data from the Indian Premier Leauge (IPL) consisting of `r nrow(ipl)` pitches from the 2015 - 2022 seasons. From 2015 - 2021, the league had 8 teams followed by 10 teams in the 2022 season.  
+```{r}
+ipl %>% group_by(season) %>% summarize(n = n())
+```
+Runs in cricket are either scored by running back and forth between the wickets once the ball is put into play (generally resulting in 1 or 2 runs, but theoretically any value is possible).  In addition, a ball that is hit in the air over the boundary (termed a "boundary") is worth 6 runs and if the ball rolls to the boundary or bounces in the field of play and then clears the boundary this is worth 4 runs (termed a "boundary 4").  As a result the distribution of runs scored on a a particular pitch has large peaks are 0 and 1 with a big drop off from 1 to 2.  Values of 3 and 5 are extremely rare accounting for only `r round(mean(ipl$runs_off_bat == 3)*100,2)`% and `r round(mean(ipl$runs_off_bat == 5)*100,2)`% of values across all pitches in our data set.  Values of 4 and 6 spike because of boundaries and boundary fours and together account for `r round(mean(ipl$runs_off_bat == 4)*100 + mean(ipl$runs_off_bat == 6)*100,2)`% of all values.  
+
+```{r bar, fig.cap = "Bar Plot of the number of runs scored of a particular pitch"}
+ipl %>% ggplot(aes(x = runs_off_bat)) + geom_bar()
+```
+Figure \ref{fig:bar} shows a bar plot.  
+
+# Models {#sec:models}
+Let $r_i$ be the number of runs scored on the $i$-th ball with $i=1,\cdots,n$ and $r_i \in \left\{0,1,\cdots,6\right\}$.  Then define ${\bf y_{i}} = \left(y_{i0},\ldots,y_{i6}\right)$ where $y_{ij} = I(r_i = j), \forall j = 0, \cdots, 6$ and $I(.)$ is the indicator function.  We then model: 
+
+$$
+{\bf y_i} \sim MN(1,{\bf p_i})
+$$
+where ${\bf p_{i}} = \left(p_{i0},\ldots,p_{i6}\right)$, $p_{ij}$ is the probability that $j$ runes are scored on the $i$-th ball, and $\sum_{j = 0}^{6} p_{ij} = 1$ for all $i$.  
+
+$$
+log\left(\frac{p_{j}}{p_{0}}\right) = \beta_{0j} + {\bf X}{\bf \beta}_j + b_{j,batter} + b_{j,bowler} + b_{j,runner}
+$$
+for $j = 1,\ldots,6$ where $\beta_{0j}$ is the intercept of the $j$-th linear component, ${\bf \beta}_j$ is a $P$-dimensional vector containing the regression coefficients for the fixed effects, ${\bf X}$ is the matrix of covariates, and $b_{j,batter}, b_{j,bowler}, b_{j,runner}$ are random effects for the batter, bowler, and runner, respectively.
+
+## Priors
+<!-- whatever priors we decide to use-->
+$\beta_{j0} \sim N(0,1)$ for $j = 1, \ldots, 6$ and $\beta_{jp} \sim N(0,1)$ for $p = 1, \ldots, P$ and $j = 1, \ldots, 6$. 
+
+$b_{j,batter} \sim N(0,\sigma^2_{batter})$ for all batters.
+$b_{j,bowler} \sim N(0,\sigma^2_{bowler})$ for all bowlers.
+$b_{j,runner} \sim N(0,\sigma^2_{runner})$ for all runners.  
+
+$\sigma^2_{batter}, \sigma^2_{bowler}, \sigma^2_{runner} \sim Inv-\chi^2(something)$
+
+
+
+# Results {#sec:results}
+
+# Discsusson, Future work and conclusions {#sec:conclusions}
+
+# Acknowledgements {-}
+
+# Supplementary Material {-}
+
+All code for reproducing the analyses in this paper is publicly available at https://github.com/gjm112/cricketIPL
+
+# References
