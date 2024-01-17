@@ -59,7 +59,7 @@ In the game of cricket, the number of runs scored on a particular pitch typicall
 
 
 ```{r echo = FALSE}
-ipl <- read.csv("/Users/gregorymatthews/Dropbox/cricketIPL/data/IPL_Data.csv")
+ipl <- read.csv("./data/IPL_Data.csv")
 library(tidyverse)
 
 #table(ipl$season)
@@ -69,12 +69,12 @@ library(tidyverse)
 ```
 
 ```{r}
-ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(season) %>% summarise(n = n()) 
+ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(season) %>% summarise(n_teams = n()) 
 ```
 
 We have data from the Indian Premier Leauge (IPL) consisting of `r nrow(ipl)` pitches from the 2015 - 2022 seasons. From 2015 - 2021, the league had 8 teams followed by 10 teams in the 2022 season.  
 ```{r}
-ipl %>% group_by(season) %>% summarize(n = n())
+ipl %>% group_by(season) %>% summarize(n_pitches = n())
 ```
 Runs in cricket are either scored by running back and forth between the wickets once the ball is put into play (generally resulting in 1 or 2 runs, but theoretically any value is possible).  In addition, a ball that is hit in the air over the boundary (termed a "boundary") is worth 6 runs and if the ball rolls to the boundary or bounces in the field of play and then clears the boundary this is worth 4 runs (termed a "boundary 4").  As a result the distribution of runs scored on a a particular pitch has large peaks are 0 and 1 with a big drop off from 1 to 2.  Values of 3 and 5 are extremely rare accounting for only `r round(mean(ipl$runs_off_bat == 3)*100,2)`% and `r round(mean(ipl$runs_off_bat == 5)*100,2)`% of values across all pitches in our data set.  Values of 4 and 6 spike because of boundaries and boundary fours and together account for `r round(mean(ipl$runs_off_bat == 4)*100 + mean(ipl$runs_off_bat == 6)*100,2)`% of all values.  
 
@@ -82,6 +82,10 @@ Runs in cricket are either scored by running back and forth between the wickets 
 ipl %>% ggplot(aes(x = runs_off_bat)) + geom_bar()
 ```
 Figure \ref{fig:bar} shows a bar plot.  
+
+```{r fig.cap="Can I caption a table?"}
+ipl %>% group_by(striker) %>% summarize(xbar = mean(runs_off_bat), n = n()) %>% arrange(-xbar) %>% filter(n > 500)
+```
 
 # Models {#sec:models}
 Let $r_i$ be the number of runs scored on the $i$-th ball with $i=1,\cdots,n$ and $r_i \in \left\{0,1,\cdots,6\right\}$.  Then define ${\bf y_{i}} = \left(y_{i0},\ldots,y_{i6}\right)$ where $y_{ij} = I(r_i = j), \forall j = 0, \cdots, 6$ and $I(.)$ is the indicator function.  We then model: 
