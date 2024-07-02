@@ -2,13 +2,13 @@
 title: |
   |  \Large Indian Premier League Cricket
 author: | 
-  | \large Matt Stuart$^{1,2}$, Hassan Raffique$^{3}$, Leigha DeRango$^1$
+  | \large Matthew Stuart$^{1,2}$, Hassan Raffique$^{3}$, Leigha DeRango$^1$
   | \large Gregory J. Matthews$^{1,2}$
   | \vspace{-1.1mm}
   | \large $^1$ Department of Mathematics and Statistics, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
   | \large $^2$ Center for Data Science and Consulting, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
-  | \large $^3$ Univsersiry of Iowa, Iowa City, IA \vspace{-1.1mm}
-  | \large $^+$ Corresponding: mstaurt@luc.edu \vspace{-1.1mm}
+  | \large $^3$ University of Iowa, Iowa City, IA \vspace{-1.1mm}
+  | \large $^+$ Corresponding: mstuart1@luc.edu \vspace{-1.1mm}
 abstract: |
   | Wicked Googly \vspace{2mm}
   | *Keywords*: Cricket
