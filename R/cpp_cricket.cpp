@@ -50,65 +50,85 @@ double log_post_multi(arma::vec y, arma::mat X, arma::mat beta, arma::mat Z_bowl
 }
 
 // [[Rcpp::export]]
-arma::mat dlog_post_multi_dbeta(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau){
-  int N = y.n_rows;
+arma::mat dlog_post_multi_dbeta(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows){
   int Dx = X.n_cols;
   int K = beta.n_cols;
-  arma::mat odds = exp(X * beta + Z_bowl * u_bowl + Z_bat * u_bat + Z_run * u_run);
+  arma::mat y_sub = y.rows(sub_rows);
+  arma::mat X_sub = X.rows(sub_rows);
+  arma::mat Z_bowl_sub = Z_bowl.rows(sub_rows);
+  arma::mat Z_bat_sub = Z_bat.rows(sub_rows);
+  arma::mat Z_run_sub = Z_run.rows(sub_rows);
+  int N = y_sub.n_rows;
+  arma::mat odds = exp(X_sub * beta + Z_bowl_sub * u_bowl + Z_bat_sub * u_bat + Z_run_sub * u_run);
   arma::mat prob(N,K);
   arma::mat out(Dx,K);
   for (int i = 0; i < N; i++){
     prob.row(i) = odds.row(i) / sum(odds.row(i));
   }
-  out = X.t() * (y - prob);
+  out = X_sub.t() * (y_sub - prob);
   out += -beta/100;
   return out.cols(0,K-2);
 }
 
 // [[Rcpp::export]]
-arma::mat dlog_post_multi_dbowl(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau){
-  int N = y.n_rows;
+arma::mat dlog_post_multi_dbowl(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows){
   int Dz = Z_bowl.n_cols;
   int K = beta.n_cols;
-  arma::mat odds = exp(X * beta + Z_bowl * u_bowl + Z_bat * u_bat + Z_run * u_run);
+  arma::mat y_sub = y.rows(sub_rows);
+  arma::mat X_sub = X.rows(sub_rows);
+  arma::mat Z_bowl_sub = Z_bowl.rows(sub_rows);
+  arma::mat Z_bat_sub = Z_bat.rows(sub_rows);
+  arma::mat Z_run_sub = Z_run.rows(sub_rows);
+  int N = y_sub.n_rows;
+  arma::mat odds = exp(X_sub * beta + Z_bowl_sub * u_bowl + Z_bat_sub * u_bat + Z_run_sub * u_run);
   arma::mat prob(N,K);
   arma::mat out(Dz,K);
   for (int i = 0; i < N; i++){
     prob.row(i) = odds.row(i) / sum(odds.row(i));
   }
-  out = Z_bowl.t() * (y - prob);
+  out = Z_bowl_sub.t() * (y_sub - prob);
   out += -u_bowl/pow(exp(ltau[0]),2);
   return out.cols(0,K-2);
 }
 
 // [[Rcpp::export]]
-arma::mat dlog_post_multi_dbat(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau){
-  int N = y.n_rows;
+arma::mat dlog_post_multi_dbat(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows){
   int Dz = Z_bat.n_cols;
   int K = beta.n_cols;
-  arma::mat odds = exp(X * beta + Z_bowl * u_bowl + Z_bat * u_bat + Z_run * u_run);
+  arma::mat y_sub = y.rows(sub_rows);
+  arma::mat X_sub = X.rows(sub_rows);
+  arma::mat Z_bowl_sub = Z_bowl.rows(sub_rows);
+  arma::mat Z_bat_sub = Z_bat.rows(sub_rows);
+  arma::mat Z_run_sub = Z_run.rows(sub_rows);
+  int N = y_sub.n_rows;
+  arma::mat odds = exp(X_sub * beta + Z_bowl_sub * u_bowl + Z_bat_sub * u_bat + Z_run_sub * u_run);
   arma::mat prob(N,K);
   arma::mat out(Dz,K);
   for (int i = 0; i < N; i++){
     prob.row(i) = odds.row(i) / sum(odds.row(i));
   }
-  out = Z_bat.t() * (y - prob);
+  out = Z_bat_sub.t() * (y_sub - prob);
   out += -u_bat/pow(exp(ltau[1]),2);
   return out.cols(0,K-2);
 }
 
 // [[Rcpp::export]]
-arma::mat dlog_post_multi_drun(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau){
-  int N = y.n_rows;
+arma::mat dlog_post_multi_drun(arma::mat y, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows){
   int Dz = Z_run.n_cols;
   int K = beta.n_cols;
-  arma::mat odds = exp(X * beta + Z_bowl * u_bowl + Z_bat * u_bat + Z_run * u_run);
+  arma::mat y_sub = y.rows(sub_rows);
+  arma::mat X_sub = X.rows(sub_rows);
+  arma::mat Z_bowl_sub = Z_bowl.rows(sub_rows);
+  arma::mat Z_bat_sub = Z_bat.rows(sub_rows);
+  arma::mat Z_run_sub = Z_run.rows(sub_rows);
+  int N = y_sub.n_rows;
+  arma::mat odds = exp(X_sub * beta + Z_bowl_sub * u_bowl + Z_bat_sub * u_bat + Z_run_sub * u_run);
   arma::mat prob(N,K);
   arma::mat out(Dz,K);
   for (int i = 0; i < N; i++){
     prob.row(i) = odds.row(i) / sum(odds.row(i));
   }
-  out = Z_run.t() * (y - prob);
+  out = Z_run_sub.t() * (y_sub - prob);
   out += -u_run/pow(exp(ltau[2]),2);
   return out.cols(0,K-2);
 }
@@ -119,7 +139,6 @@ arma::vec dlog_post_multi_dltau(arma::mat X, arma::mat beta, arma::mat Z_bowl, a
   int Dbat = Z_bat.n_cols;
   int Drun = Z_run.n_cols;
   int K = beta.n_cols;
-  arma::mat log_odds = X * beta + Z_bowl * u_bowl + Z_bat * u_bat + Z_run * u_run;
   arma::vec out(3);
   out.zeros();
   for (int k = 0; k < K; k++){
@@ -140,7 +159,7 @@ arma::vec dlog_post_multi_dltau(arma::mat X, arma::mat beta, arma::mat Z_bowl, a
 }
 
 // [[Rcpp::export]]
-double get_q(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::mat prop_beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat prop_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat prop_bat, arma::mat Z_run, arma::mat u_run, arma::mat prop_run, arma::vec ltau, arma::vec prop_ltau, double a){
+double get_q(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::mat prop_beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat prop_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat prop_bat, arma::mat Z_run, arma::mat u_run, arma::mat prop_run, arma::vec ltau, arma::vec prop_ltau, arma::uvec sub_rows, double a){
   int Dx = X.n_cols;
   int Dbowl = Z_bowl.n_cols;
   int Dbat = Z_bat.n_cols;
@@ -149,15 +168,15 @@ double get_q(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::ma
   double q = 0;
   q += log_post_multi(y,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
   q += -log_post_multi(y,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_prop_beta = dlog_post_multi_dbeta(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
-  arma::mat d_prop_bowl = dlog_post_multi_dbowl(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
-  arma::mat d_prop_bat = dlog_post_multi_dbat(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
-  arma::mat d_prop_run = dlog_post_multi_drun(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
+  arma::mat d_prop_beta = dlog_post_multi_dbeta(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau,sub_rows);
+  arma::mat d_prop_bowl = dlog_post_multi_dbowl(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau,sub_rows);
+  arma::mat d_prop_bat = dlog_post_multi_dbat(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau,sub_rows);
+  arma::mat d_prop_run = dlog_post_multi_drun(y_mat,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau,sub_rows);
   arma::vec d_prop_ltau = dlog_post_multi_dltau(X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
-  arma::mat d_beta = dlog_post_multi_dbeta(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_bowl = dlog_post_multi_dbowl(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_bat = dlog_post_multi_dbat(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_run = dlog_post_multi_drun(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
+  arma::mat d_beta = dlog_post_multi_dbeta(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bowl = dlog_post_multi_dbowl(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bat = dlog_post_multi_dbat(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_run = dlog_post_multi_drun(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
   arma::vec d_ltau = dlog_post_multi_dltau(X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
   for (int k = 0; k < (K-1); k++){
     for (int d = 0; d < Dx; d++){
@@ -185,16 +204,16 @@ double get_q(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::ma
 }
 
 // [[Rcpp::export]]
-Rcpp::List MALA(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, double a){
+Rcpp::List MALA(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows, double a){
   int Dx = X.n_cols;
   int Dbowl = Z_bowl.n_cols;
   int Dbat = Z_bat.n_cols;
   int Drun = Z_run.n_cols;
   int K = beta.n_cols;
-  arma::mat d_beta = dlog_post_multi_dbeta(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_bowl = dlog_post_multi_dbowl(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_bat = dlog_post_multi_dbat(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
-  arma::mat d_run = dlog_post_multi_drun(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
+  arma::mat d_beta = dlog_post_multi_dbeta(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bowl = dlog_post_multi_dbowl(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bat = dlog_post_multi_dbat(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_run = dlog_post_multi_drun(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
   arma::vec d_ltau = dlog_post_multi_dltau(X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
   
   arma::mat prop_beta(Dx,K);
@@ -216,10 +235,10 @@ Rcpp::List MALA(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma:
       prop_run(d,k) = R::rnorm(u_run(d,k) + a*d_run(d,k),sqrt(2*a));
     }
   }
-  for (int k = 0; k < 2; k++){
+  for (int k = 0; k < 3; k++){
     prop_ltau(k) = R::rnorm(ltau(k) + a*d_ltau(k),sqrt(2*a));
   }
-  double q = get_q(y,y_mat,X,beta,prop_beta,Z_bowl,u_bowl,prop_bowl,Z_bat,u_bat,prop_bat,Z_run,u_run,prop_run,ltau,prop_ltau,a);
+  double q = get_q(y,y_mat,X,beta,prop_beta,Z_bowl,u_bowl,prop_bowl,Z_bat,u_bat,prop_bat,Z_run,u_run,prop_run,ltau,prop_ltau,sub_rows,a);
   if (q > log(R::runif(0,1))){
     beta = prop_beta;
     u_bowl = prop_bowl;
@@ -233,6 +252,59 @@ Rcpp::List MALA(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma:
                             Named("u_run") = u_run,
                             Named("ltau") = ltau,
                             Named("q") = q);
+}
+
+// [[Rcpp::export]]
+Rcpp::List Do_One_Step(arma::vec y, arma::mat y_mat, arma::mat X, arma::mat beta, arma::mat Z_bowl, arma::mat u_bowl, arma::mat Z_bat, arma::mat u_bat, arma::mat Z_run, arma::mat u_run, arma::vec ltau, arma::uvec sub_rows, double a){
+  int Dx = X.n_cols;
+  int Dbowl = Z_bowl.n_cols;
+  int Dbat = Z_bat.n_cols;
+  int Drun = Z_run.n_cols;
+  int K = beta.n_cols;
+  arma::mat d_beta = dlog_post_multi_dbeta(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bowl = dlog_post_multi_dbowl(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_bat = dlog_post_multi_dbat(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::mat d_run = dlog_post_multi_drun(y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows);
+  arma::vec d_ltau = dlog_post_multi_dltau(X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
+  
+  arma::mat prop_beta(Dx,K);
+  arma::mat prop_bowl(Dbowl,K);
+  arma::mat prop_bat(Dbat,K);
+  arma::mat prop_run(Drun,K);
+  arma::vec prop_ltau(3);
+  for (int k = 0; k < (K-1); k++){
+    for (int d = 0; d < Dx; d++){
+      prop_beta(d,k) = beta(d,k) - a*d_beta(d,k);
+    }
+    for (int d = 0; d < Dbowl; d++){
+      prop_bowl(d,k) = u_bowl(d,k) - a*d_bowl(d,k);
+    }
+    for (int d = 0; d < Dbat; d++){
+      prop_bat(d,k) = u_bat(d,k) - a*d_bat(d,k);
+    }
+    for (int d = 0; d < Drun; d++){
+      prop_run(d,k) = u_run(d,k) - a*d_run(d,k);
+    }
+  }
+  for (int k = 0; k < 3; k++){
+    prop_ltau(k) = ltau(k) - a*d_ltau(k);
+  }
+  double log_post_prop = log_post_multi(y,X,prop_beta,Z_bowl,prop_bowl,Z_bat,prop_bat,Z_run,prop_run,prop_ltau);
+  double log_post_curr = log_post_multi(y,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau);
+  // if (log_post_prop > log_post_curr){
+  //   beta = prop_beta;
+  //   u_bowl = prop_bowl;
+  //   u_bat = prop_bat;
+  //   u_run = prop_run;
+  //   ltau = prop_ltau;
+  // }
+  return Rcpp::List::create(Named("beta") = prop_beta,
+                            Named("u_bowl") = prop_bowl,
+                            Named("u_bat") = prop_bat,
+                            Named("u_run") = prop_run,
+                            Named("ltau") = prop_ltau,
+                            Named("log_post_star") = log_post_prop,
+                            Named("log_post_curr") = log_post_curr);
 }
 
 // // [[Rcpp::export]]

@@ -13,7 +13,7 @@ u_bowl <- matrix(0,nrow=Dbowl,ncol=K)
 u_bat <- matrix(0,nrow=Dbat,ncol=K)
 u_run <- matrix(0,nrow=Drun,ncol=K)
 ltau   <- rep(0,3)
-a      <- a0 <- 1e-8
+a      <- a0 <- 1e-10
 
 H <- 0
 delta <- 0.65
@@ -25,7 +25,13 @@ kappa <- 0.75
 #for (chn in 1:n_chns){
   for (i in 1:(R+B)){
     print(i)
-    iter   <- MALA(y,y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,a)
+    if (i %% 5 == 0){
+      sub_rows = 5*(0:((nrow(Cricket)/5) %>% floor()))
+    } else {
+      sub_rows = 5*(1:((nrow(Cricket)/5) %>% floor()) - 1) + (i %% 5)
+    }
+    iter   <- MALA(y,y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,sub_rows,a)
+    # iter   <- Do_One_Step(y,y_mat,X,beta,Z_bowl,u_bowl,Z_bat,u_bat,Z_run,u_run,ltau,a)
     beta   <- iter$beta
     u_bowl <- iter$u_bowl
     u_bat  <- iter$u_bat
