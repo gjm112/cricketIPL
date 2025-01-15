@@ -1,0 +1,235 @@
+---
+title: "data cleaning"
+author: "Leigha DeRango"
+date: "2023-07-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# libraries
+```{r}
+library(dplyr)
+library(cricketdata)
+```
+
+
+# get leagues individually bbb
+```{r}
+# indian premier league
+ipl_bbb = fetch_cricsheet('bbb', 'male', 'ipl') %>%
+  mutate(league = 'IPL')
+
+# big bash league australia
+bbl_bbb = fetch_cricsheet('bbb', 'male', 'bbl') %>%
+  mutate(league = 'BBL')
+
+# pakistan super league
+psl_bbb = fetch_cricsheet('bbb', 'male', 'psl') %>%
+  mutate(league = 'PSL')
+
+# caribbean premier league
+cpl_bbb = fetch_cricsheet('bbb', 'male', 'cpl') %>%
+  mutate(league = 'CPL')
+
+# south african league
+sat_bbb = fetch_cricsheet('bbb', 'male', 'sat')%>%
+  mutate(league = 'SAT')
+
+
+bbb = rbind(ipl_bbb, bbl_bbb, psl_bbb, cpl_bbb, sat_bbb)
+names(bbb)
+```
+
+# lists of players per match per season
+```{r}
+### IPL
+ipl_players = fetch_cricsheet('player', 'male', 'ipl')
+ipl_matches = fetch_cricsheet('match', 'male', 'ipl') %>% select(match_id, season)
+
+ipl_full = left_join(ipl_players, ipl_matches, by = 'match_id', keep = TRUE) %>% select(team, player, match_id.x, season) %>% mutate(season_adj = substr(season, 1, 4), league = 'IPL')
+
+### BBL
+bbl_players = fetch_cricsheet('player', 'male', 'bbl')
+bbl_matches = fetch_cricsheet('match', 'male', 'bbl') %>% select(match_id, season)
+
+bbl_full = left_join(bbl_players, bbl_matches, by = 'match_id', keep = TRUE) %>% select(team, player, match_id.x, season) %>% mutate(season_adj = substr(season, 1, 4), league = 'BBL')
+
+### PSL
+psl_players = fetch_cricsheet('player', 'male', 'psl')
+psl_matches = fetch_cricsheet('match', 'male', 'psl') %>% select(match_id, season)
+
+psl_full = left_join(psl_players, psl_matches, by = 'match_id', keep = TRUE) %>% select(team, player, match_id.x, season) %>% mutate(season_adj = substr(season, 1, 4), league = 'PSL')
+
+### CPL
+cpl_players = fetch_cricsheet('player', 'male', 'cpl')
+cpl_matches = fetch_cricsheet('match', 'male', 'cpl') %>% select(match_id, season)
+
+cpl_full = left_join(cpl_players, cpl_matches, by = 'match_id', keep = TRUE) %>% select(team, player, match_id.x, season) %>% mutate(season_adj = substr(season, 1, 4), league = 'CPL')
+
+### SAT
+sat_players = fetch_cricsheet('player', 'male', 'sat')
+sat_matches = fetch_cricsheet('match', 'male', 'sat') %>% select(match_id, season)
+
+sat_full = left_join(sat_players, sat_matches, by = 'match_id', keep = TRUE) %>% select(team, player, match_id.x, season) %>% mutate(season_adj = substr(season, 1, 4), league = 'SAT')
+
+# players of each match by season
+combined_full = rbind(ipl_full, bbl_full, psl_full, cpl_full, sat_full)
+  # team/player/match_id/season/season_adj/league
+```
+
+# players total games in league by season
+```{r}
+
+games_per_season = combined_full %>%
+  group_by(season_adj, player) %>%
+  mutate(games_in_season = n()) %>% 
+  ungroup() %>% 
+  group_by(season_adj, player, league) %>% 
+  mutate(games_in_league = n()) %>%
+  select(player, season_adj, league, games_in_league, games_in_season) %>%
+  distinct() %>%
+  arrange(player, season_adj)
+
+  # player/season_adj/league/games_in_league/games_in_season
+
+```
+
+# only players that play in more than one league per season
+```{r}
+
+many_leagues = games_per_season %>% filter(games_in_league != games_in_season)
+  # player/season_adj/league/games_in_league/games_in_season
+
+```
+
+# add position and ids to those that overlap in leagues 
+```{r}
+
+positions = left_join(many_leagues, player_meta, by = join_by(player == unique_name)) %>%
+  select(player, season_adj, league, games_in_league, games_in_season, cricinfo_id,
+         cricsheet_id, batting_style, bowling_style, playing_role)
+
+```
+
+# batter/pitcher matchup counts by games and pitches faced per season
+```{r}
+
+ipl_summary = ipl_bbb %>% mutate(season_adj = substr(season, 1, 4)) %>% 
+  group_by(bowler, striker, season_adj) %>%
+  mutate(pitches_in_league = n(), .keep = 'all') %>% 
+  ungroup() %>% group_by(match_id) %>%
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>% ungroup() %>%
+  group_by(bowler, striker, season_adj) %>% 
+  mutate( games_in_league = n(), .keep = 'all') %>%
+  mutate(league = 'IPL', .before = games_in_league) %>% 
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>%
+  select(season_adj, bowler, striker, league, games_in_league, pitches_in_league)
+  
+bbl_summary = bbl_bbb %>% mutate(season_adj = substr(season, 1, 4)) %>% 
+  group_by(bowler, striker, season_adj) %>%
+  mutate(pitches_in_league = n(), .keep = 'all') %>% 
+  ungroup() %>% group_by(match_id) %>%
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>% ungroup() %>%
+  group_by(bowler, striker, season_adj) %>%
+  mutate( games_in_league = n(), .keep = 'all') %>%
+  mutate(league = 'BBL', .before = games_in_league) %>% 
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>%
+  select(season_adj, bowler, striker, league, games_in_league, pitches_in_league)
+  
+psl_summary = psl_bbb %>% mutate(season_adj = substr(season, 1, 4)) %>% 
+  group_by(bowler, striker, season_adj) %>%
+  mutate(pitches_in_league = n(), .keep = 'all') %>% 
+  ungroup() %>% group_by(match_id) %>%
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>% ungroup() %>%
+  group_by(bowler, striker, season_adj) %>%
+  mutate( games_in_league = n(), .keep = 'all') %>%
+  mutate(league = 'PSL', .before = games_in_league) %>% 
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>%
+  select(season_adj, bowler, striker, league, games_in_league, pitches_in_league)
+  
+cpl_summary = cpl_bbb %>% mutate(season_adj = substr(season, 1, 4)) %>% 
+  group_by(bowler, striker, season_adj) %>% 
+  mutate(pitches_in_league = n(), .keep = 'all') %>% 
+  ungroup() %>% group_by(match_id) %>%
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>% ungroup() %>%
+  group_by(bowler, striker, season_adj) %>%
+  mutate( games_in_league = n(), .keep = 'all') %>%
+  mutate(league = 'CPL', .before = games_in_league) %>% 
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>%
+  select(season_adj, bowler, striker, league, games_in_league, pitches_in_league)
+  
+sat_summary = sat_bbb %>% mutate(season_adj = substr(season, 1, 4)) %>% 
+  group_by(bowler, striker, season_adj) %>% 
+  mutate(pitches_in_league = n(), .keep = 'all') %>% 
+  ungroup() %>% group_by(match_id) %>%
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>% ungroup() %>%
+  group_by(bowler, striker, season_adj) %>%
+  mutate( games_in_league = n(), .keep = 'all') %>%
+  mutate(league = 'SAT', .before = games_in_league) %>% 
+  distinct(pick('bowler', 'striker'), .keep_all = TRUE) %>%
+  select(season_adj, bowler, striker, league, games_in_league, pitches_in_league)
+
+#format: 
+# group by bowler, striker, season and count number of rows for pitches faced, then ungroup
+
+# group by match_id and pick one row for each distinct bowler striker matchup in that game, then ungroup
+
+# group by bowler, striker, and season and count rows for the number of games faced
+
+# add league variable
+
+
+lifetime_matchups = rbind(ipl_summary, bbl_summary, psl_summary, cpl_summary, sat_summary)
+  #season/batter/pitcher/league/games faced in league/pitches faced in league
+```
+
+
+# count of batter/pitcher matchups across leagues by season
+```{r}
+
+league_matchups = lifetime_matchups %>%
+  mutate(IPL = ifelse(league == 'IPL', 1, 0),
+         BBL = ifelse(league == 'BBL', 1, 0),
+         PSL = ifelse(league == 'PSL', 1, 0),
+         CPL = ifelse(league == 'CPL', 1, 0),
+         SAT = ifelse(league == 'SAT', 1, 0)) %>%
+  group_by(bowler, striker, season_adj) %>%
+  summarize(IPL_matchup = sum(IPL),
+            BBL_matchup = sum(BBL),
+            PSL_matchup = sum(PSL), 
+            CPL_matchup = sum(CPL), 
+            SAT_matchup = sum(SAT))
+  #batter/pitcher/IPL matchups/BBL matchups/PSL matchups/...
+
+```
+
+# analysis of batter/pitcher matchup overlap between leagues
+```{r}
+
+sum_leagues = league_matchups %>% 
+  mutate(total_leagues = IPL_matchup + BBL_matchup + PSL_matchup + CPL_matchup + SAT_matchup)
+
+hist(sum_leagues$total_leagues)
+summary(sum_leagues$total_leagues)
+
+#average number of leagues a player was in by season
+season_averages = sum_leagues %>%
+  group_by(season_adj) %>%
+  summarize(average_leagues = mean(total_leagues)) %>%
+  print()
+  # 2016 had the most overlap
+  
+```
+
+
+
+
+
+
+
+
+
