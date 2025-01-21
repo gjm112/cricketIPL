@@ -12,16 +12,16 @@ a <- 1e-8
 
 sourceCpp("cpp_cricket.cpp")
 
-for (i in 1:10000){
+for (i in 1:100000){
   print(i)
   prop_beta    <- beta + a*dlog_post_multi_dbeta(y_mat,X,
                                                  time,bowler,league,
                                                  beta,u,
-                                                 0)
+                                                 0:(N-1))
   prop_u       <- u + a*dlog_post_multi_du(y_mat,X,
                                            time,bowler,league,
                                            beta,u,Sigma,Sigma_0,rho,
-                                           0)
+                                           0:(N-1))
   prop_rho     <- rho + a*dlog_post_multi_drho(time,bowler,league,
                                                u,Sigma,Sigma_0,rho)
   prop_Sigma   <- Sigma + a*dlog_post_multi_dSigma(time,bowler,league,
@@ -39,3 +39,8 @@ for (i in 1:10000){
   u[,K,]   <- 0
 }
 
+output <- list(beta = beta,
+               u = u,
+               rho = rho,
+               Sigma = Sigma,
+               Sigma_0 = Sigma_0)
