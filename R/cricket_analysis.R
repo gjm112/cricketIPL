@@ -6,11 +6,11 @@ library(lubridate)
 # library(LaplacesDemon)
 # library(stats4)
 # library(HMMpa)
-# library(nnet)
+library(nnet)
 library(cricketdata)
-# library(lme4)
+library(lme4)
 # library(mixcat)
-# library(glmm)
+library(glmm)
 
 # get leagues individually bbb
 # indian premier league
@@ -37,8 +37,10 @@ bbb = rbind(ipl_bbb, bbl_bbb, psl_bbb, cpl_bbb, sat_bbb)
 names(bbb)
 
 bbb <- bbb %>% 
-  filter(runs_off_bat != 3 & runs_off_bat != 5) %>%
-  mutate(time = year(start_date) - min(year(start_date)) + 1)
+  mutate(year = as.numeric(substr(season,1,4))) %>%
+  filter(innings <= 2)
+
+write.csv(bbb,"../data/cricket_data.csv",row.names = FALSE)
 
 # model <- "
 # data {
