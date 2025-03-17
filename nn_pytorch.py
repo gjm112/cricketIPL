@@ -1,3 +1,6 @@
+# Need to Change the Python directory using
+# reticulate::use_python("C:/Users/mstuart1/OneDrive - Loyola University Chicago/Documents/.virtualenvs/r-reticulate/Scripts/python.exe")
+
 import pandas as pd
 import torch
 import torch.nn as nn
