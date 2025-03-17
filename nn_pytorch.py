@@ -98,7 +98,7 @@ num_classes = labels_batch.shape[1]  # Number of output classes
 model = CategoricalNN(input_size, hidden_size, num_classes)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
-num_epochs = 3
+num_epochs = 30
 
 #train model
 model.train_model(train_loader, val_loader, criterion, optimizer, num_epochs)
