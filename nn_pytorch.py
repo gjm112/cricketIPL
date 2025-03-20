@@ -10,8 +10,6 @@ from sklearn.preprocessing import scale
 import matplotlib.pyplot as plt
 import cleaned_data as data
 
-
-
 ## model
 # Define a simple neural network
 class CategoricalNN(nn.Module):
@@ -92,7 +90,6 @@ data_batch, labels_batch = next(iter(train_loader))
 input_size = data_batch.shape[1]  # Number of categories in input
 hidden_size = int((data_batch.shape[1]+labels_batch.shape[1])/2)
 num_classes = labels_batch.shape[1]  # Number of output classes
-
 
 # Initialize model, loss function, and optimizer
 model = CategoricalNN(input_size, hidden_size, num_classes)
