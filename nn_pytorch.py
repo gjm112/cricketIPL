@@ -98,14 +98,14 @@ optimizer = optim.Adam(model.parameters(), lr=0.01)
 num_epochs = 30
 
 #train model
-model.train_model(train_loader, val_loader, criterion, optimizer, num_epochs)
+#model.train_model(train_loader, val_loader, criterion, optimizer, num_epochs)
 
 
 
 #----------------------
 
 ## model evals
-
+batch_size = 128
 model_history = torch.load('simple_nn_history.pt')
 trained_model = torch.load('simple_nn.pth')
 
