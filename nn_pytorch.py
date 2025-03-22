@@ -100,14 +100,15 @@ num_epochs = 30
 #train model
 #model.train_model(train_loader, val_loader, criterion, optimizer, num_epochs)
 
-
+#torch.save(model.state_dict(), 'nn_pytorch.pth')
 
 #----------------------
 
 ## model evals
 batch_size = 128
 model_history = torch.load('simple_nn_history.pt')
-trained_model = torch.load('simple_nn.pth')
+trained_model = CategoricalNN(input_size, hidden_size, num_classes)
+trained_model.load_state_dict(torch.load('nn_pytorch.pth'))
 
 
 # training loss progression
