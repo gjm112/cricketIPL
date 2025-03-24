@@ -29,59 +29,67 @@ batters_per_season = bbb.groupby(['year'])['striker'].value_counts().reset_index
 # get list of seasons present in data
 list_of_seasons = bbb['year'].unique().tolist()
 
+def replace_value(value):
+    value_map = {
+        3: 4,
+        4: 6
+    }
+    return value_map.get(value, value)
+
+# save outputs into nested dict where each player has a key, and a separate (key, value) for each season they played in
+player_season_dict ={}
 
 # for each batter in each season they appear, replicate all pitches in that season with them as the batter
-for year in list_of_seasons:
-
+for year in list_of_seasons[0:2]:
+    print(year)
     list_of_batters = batters_per_season[batters_per_season['year'] == year]['striker'].to_list()
+    season_col = f'season_{year}'
 
-    for batter in list_of_batters:
+    for batter in list_of_batters[0:5]:
+        print(batter)
+        tensor_shape_bbb = data.select_bbb[data.select_bbb[season_col] == 1]
 
-        modified_bbb = bbb[bbb['year'] == year].copy(deep = True) # select balls only from current season
-        modified_bbb['striker'] = str(batter) # insert current batter as batter over all pitches
+        striker_cols = [column for column in tensor_shape_bbb if column.startswith('striker_')]
+        tensor_shape_bbb[striker_cols] = 0
 
-        # put into model form (only selected columns, onehot categorical vars)
-        tensor_shape_bbb = pd.DataFrame({'season' : modified_bbb['year'],
-            'innings': modified_bbb['innings'],
-            'target' : modified_bbb['target'],
-            'balls_remaining' :modified_bbb['balls_remaining'],
-            'runs_scored_yet' : modified_bbb['runs_scored_yet'],
-            'wickets_lost_yet' : modified_bbb['wickets_lost_yet'],
-            'venue' :modified_bbb['venue'],
-            'striker' : modified_bbb['striker'],
-            'bowler': modified_bbb['bowler'],
-            'league' : modified_bbb['league']})
-        
-        tensor_shape_bbb = pd.get_dummies(tensor_shape_bbb, columns = ['season','innings','striker','venue','bowler','league'])
-        numeric_cols = ['target', 'balls_remaining', 'runs_scored_yet', 'wickets_lost_yet']
-        tensor_shape_bbb[numeric_cols] = scale(tensor_shape_bbb[numeric_cols])
-        
+        current_striker = f'striker_{batter}'
+        tensor_shape_bbb[current_striker] = 1
+
 
         # turn into tensordataset
         X = torch.tensor(tensor_shape_bbb.to_numpy(dtype = 'float32'))
         X = TensorDataset(X)
 
+        
         player_season_loader = data.create_dataloader(X, batch_size =  batch_size)
 
         player_season_preds = []
         with torch.no_grad():
             for input in player_season_loader:
-                player_season_preds.extend(model.predict(input))
 
+                preds = model.predict(input[0])
+                #preds = [int(pred) for pred in preds]
+                preds = [replace_value(int(pred)) for pred in preds]
+
+                player_season_preds.extend(preds)
+        
+        
         # save player_season preds as larger data object
-            ## START HERE
-                # need to save (player, season) as key and predictions as entry in dict-like object
+        if batter not in player_season_dict:
+            player_season_dict[batter] = {}
 
+        player_season_dict[batter][year] = player_season_preds
 
                                                       
 
+for batter, season in player_season_dict.items():
+    print(batter)
+    for year, preds in season.items():
+        print(year)
+        print(preds)
 
 
 
-
-
-
-## get predicted response
 
 ## average over batter/league/season
 
