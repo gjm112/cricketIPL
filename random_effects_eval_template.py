@@ -48,7 +48,7 @@ for year in list_of_seasons:
     list_of_batters = batters_per_season[batters_per_season['year'] == year]['striker'].to_list()
     season_col = f'season_{year}'
 
-    season_bbb = bbb[bbb['year'] == year] 
+    season_bbb = bbb[bbb['year'] == year].copy()
 
     for batter in list_of_batters:
         print(batter)
@@ -59,10 +59,10 @@ for year in list_of_seasons:
 
         # set striker indicator col to current batter
         striker_cols = [column for column in tensor_shape_bbb if column.startswith('striker_')]
-        tensor_shape_bbb[striker_cols] = 0
+        tensor_shape_bbb.loc[:,striker_cols] = bool(0)
 
         current_striker = f'striker_{batter}'
-        tensor_shape_bbb[current_striker] = 1
+        tensor_shape_bbb.loc[:,current_striker] = bool(1)
 
         # turn into tensordataset
         X = torch.tensor(tensor_shape_bbb.to_numpy(dtype = 'float32'))
@@ -89,7 +89,7 @@ for year in list_of_seasons:
         player_season_dict[batter][year] = player_season_preds
 
         # connect predictions back to plays (shuffle = False in dataloader should preserve index order)
-        season_bbb['model_pred'] = player_season_preds
+        season_bbb.loc[:,'model_pred'] = player_season_preds
 
         # find average within each league
         pred_rob = season_bbb.groupby('league')['model_pred'].mean().reset_index()
@@ -109,23 +109,13 @@ rob_estimates.to_csv('nn_pytorch_ranefs.csv')
         
 
 
-
-
-                                                  
+                                 
 # to iterate through nested dict and get predictions:
 """ for batter, season in player_season_dict.items():
     print(batter)
     for year, preds in season.items():
         print(year)
         print(preds) """
-
-
-
-
-
-## average over batter/league/season
-
-
 
 
 
