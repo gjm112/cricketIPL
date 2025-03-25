@@ -38,55 +38,87 @@ def replace_value(value):
 
 # save outputs into nested dict where each player has a key, and a separate (key, value) for each season they played in
 player_season_dict ={}
+rob_estimates_dfs = []
 
 # for each batter in each season they appear, replicate all pitches in that season with them as the batter
-for year in list_of_seasons[0:2]:
+for year in list_of_seasons:
     print(year)
+
+    # get all batters who played in the current season
     list_of_batters = batters_per_season[batters_per_season['year'] == year]['striker'].to_list()
     season_col = f'season_{year}'
 
-    for batter in list_of_batters[0:5]:
-        print(batter)
-        tensor_shape_bbb = data.select_bbb[data.select_bbb[season_col] == 1]
+    season_bbb = bbb[bbb['year'] == year] 
 
+    for batter in list_of_batters:
+        print(batter)
+        print(f' {list_of_batters.index(batter)} / {len(list_of_batters)}')
+
+        # select only pitches thrown in the current season
+        tensor_shape_bbb = data.select_bbb[data.select_bbb[season_col] == 1] 
+
+        # set striker indicator col to current batter
         striker_cols = [column for column in tensor_shape_bbb if column.startswith('striker_')]
         tensor_shape_bbb[striker_cols] = 0
 
         current_striker = f'striker_{batter}'
         tensor_shape_bbb[current_striker] = 1
 
-
         # turn into tensordataset
         X = torch.tensor(tensor_shape_bbb.to_numpy(dtype = 'float32'))
         X = TensorDataset(X)
 
-        
-        player_season_loader = data.create_dataloader(X, batch_size =  batch_size)
+        # load for prediction with shuffle = False to maintain index order
+        player_season_loader = data.create_dataloader(X, batch_size =  batch_size, shuffle = False)
 
+        # predict for current player over all balls (in all leagues) thrown in the current season
         player_season_preds = []
         with torch.no_grad():
             for input in player_season_loader:
 
-                preds = model.predict(input[0])
-                #preds = [int(pred) for pred in preds]
-                preds = [replace_value(int(pred)) for pred in preds]
+                preds = model.predict(input[0]) # predict
+                preds = [replace_value(int(pred)) for pred in preds] # insert true run values
 
                 player_season_preds.extend(preds)
         
         
-        # save player_season preds as larger data object
+        # save player preds for each season as nested dictionary with {batter : (season: preds)}
         if batter not in player_season_dict:
             player_season_dict[batter] = {}
 
         player_season_dict[batter][year] = player_season_preds
 
-                                                      
+        # connect predictions back to plays (shuffle = False in dataloader should preserve index order)
+        season_bbb['model_pred'] = player_season_preds
 
-for batter, season in player_season_dict.items():
+        # find average within each league
+        pred_rob = season_bbb.groupby('league')['model_pred'].mean().reset_index()
+        true_rob = season_bbb[season_bbb['striker'] == batter].groupby('league')['runs_off_bat'].mean().reset_index()
+        
+        # join preds and true with NA for true where player did not play in league
+        joined = pd.merge(pred_rob, true_rob, on = 'league', how='outer')
+
+        joined['year']= year
+        joined['striker'] = batter
+
+        rob_estimates_dfs.append(joined)
+
+
+rob_estimates = pd.concat(rob_estimates_dfs, ignore_index = True)
+rob_estimates.to_csv('nn_pytorch_ranefs.csv')
+        
+
+
+
+
+                                                  
+# to iterate through nested dict and get predictions:
+""" for batter, season in player_season_dict.items():
     print(batter)
     for year, preds in season.items():
         print(year)
-        print(preds)
+        print(preds) """
+
 
 
 

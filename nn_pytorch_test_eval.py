@@ -34,7 +34,7 @@ plt.show()
 ## get model predictions on test set
 
 # get test set
-test_loader = data.create_dataloader(data.test_dataset, batch_size = batch_size)
+test_loader = data.create_dataloader(data.test_dataset, batch_size = batch_size, shuffle = False)
 
 ## initialize
 test_predictions = []

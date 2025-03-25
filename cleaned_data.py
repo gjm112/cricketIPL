@@ -78,9 +78,9 @@ test_dataset = CustomDataset(test_dataset)
 
 
 
-def create_dataloader(data, batch_size):
+def create_dataloader(data, batch_size, shuffle):
     dataset = CustomDataset(data)
-    dataloader = DataLoader(dataset, batch_size=batch_size)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle = shuffle)
     return dataloader
 
 
