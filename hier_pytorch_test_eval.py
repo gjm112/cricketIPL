@@ -2,7 +2,7 @@
 # reticulate::use_python("C:/Users/mstuart1/OneDrive - Loyola University Chicago/Documents/.virtualenvs/r-reticulate/Scripts/python.exe")
 
 import torch
-import cleaned_data as data # get cleaned data
+import cleaned_data_regression as data # get cleaned data
 import pandas as pd
 from torch.utils.data import DataLoader, TensorDataset, Dataset  
 import matplotlib.pyplot as plt
@@ -11,13 +11,12 @@ from sklearn.preprocessing import scale
 
 # import model file for access to model class and training meta (input_size, hidden_size, num_classes, batchsize)
 # Be sure to comment out the model training lines first
-from nn_pytorch import CategoricalNN, input_size, hidden_size, num_classes, batch_size 
+from hier_pytorch import HierarchicalMultinomialRegression, n_fixed, B, L, T, K, batch_size 
 
 ## model evals
-batch_size = 128
-model_history = torch.load('simple_nn_history.pt')
-trained_model = CategoricalNN(input_size, hidden_size, num_classes)
-trained_model.load_state_dict(torch.load('nn_pytorch.pth'))
+model_history = torch.load('simple_hier_history_V2.pt')
+trained_model = HierarchicalMultinomialRegression(n_fixed, B, L, T, K)
+trained_model.load_state_dict(torch.load('hier_pytorch_V2.pth'))
 
 
 # training loss progression
@@ -35,6 +34,21 @@ plt.xlabel('Epoch')
 plt.title('Validation Loss')
 plt.show()
 
+## Extract correlation matrix
+raw_chol = dict(trained_model.named_parameters())['raw_chol'].data
+torch.tril(raw_chol)
+
+cov_tensor = raw_chol @ raw_chol.transpose(-1, -2)  # Ensure positive semi-definite
+
+# Extract standard deviations
+stddevs = torch.sqrt(torch.diagonal(cov_tensor, dim1=1, dim2=2))  # shape (5, 5)
+
+# Outer product of stddevs to form denominator for correlation
+denom = stddevs.unsqueeze(2) * stddevs.unsqueeze(1)  # shape (5, 5, 5)
+
+# Compute correlation matrices
+corr_tensor = cov_tensor / denom
+
 ## get model predictions on test set
 
 # get test set
@@ -46,10 +60,24 @@ test_labels = []
 
 # use model on test set and get predictions
 with torch.no_grad():
-  for inputs, labels in test_loader:
-    test_predictions.extend(trained_model.predict(inputs))
-    _, pred = torch.max(labels, 1)
-    test_labels.extend(pred.numpy())
+    for X, batter_id, league_id, season_id in test_loader:
+        test_predictions.extend(trained_model.predict(X, batter_id, league_id, season_id))
+        _, pred = torch.max(labels, 1)
+        test_labels.extend(pred.numpy())
+
+# with torch.no_grad():
+#     for X, y, batter_id, league_id, season_id in test_loader:
+#         X = X.to(device)
+#         y = y.to(device)
+#         batter_id = batter_id.to(device)
+#         league_id = league_id.to(device)
+#         season_id = season_id.to(device)
+# 
+#         outputs, _ = trained_model(X, batter_id, league_id, season_id)
+#         _, predicted = torch.max(outputs, dim=1)
+# 
+#         all_preds.extend(predicted.cpu().numpy())
+#         all_labels.extend(y.cpu().numpy())
 
 
 conf_matrix = confusion_matrix(test_labels, test_predictions)

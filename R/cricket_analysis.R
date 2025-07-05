@@ -71,7 +71,7 @@ write.csv(bbb,"../data/cricket_data.csv",row.names = FALSE)
 #     sigma[k] ~ normal(0,5);               // Prior on standard deviations
 #     L_Omega[k] ~ lkj_corr_cholesky(1);    // LKJ prior for correlations
 #   }
-#   
+# 
 #   // Hierarchical Structure
 #   for (k in 1:(K-1)){
 #     for (b in 1:B){
@@ -84,7 +84,7 @@ write.csv(bbb,"../data/cricket_data.csv",row.names = FALSE)
 #             )
 #           );
 #       }
-#       u[k][1,(L*(b-1)+1):(L*(b-1)+L)] ~          
+#       u[k][1,(L*(b-1)+1):(L*(b-1)+L)] ~
 #           multi_normal_cholesky(
 #             rep_vector(0,L),
 #             diag_pre_multiply(
@@ -104,7 +104,7 @@ write.csv(bbb,"../data/cricket_data.csv",row.names = FALSE)
 #     y[n] ~ categorical_logit(logits);
 #   }
 # }"
-# 
+
 # stan_mod <- stan_model(model_code = model)
 
 X <- model.matrix(~ I(innings == 1) +

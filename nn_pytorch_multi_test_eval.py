@@ -11,12 +11,12 @@ from sklearn.preprocessing import scale
 
 # import model file for access to model class and training meta (input_size, hidden_size, num_classes, batchsize)
 # Be sure to comment out the model training lines first
-from nn_pytorch import CategoricalNN, input_size, hidden_size, num_classes, batch_size 
+from nn_pytorch_multi import CategoricalNN, input_size, hidden_size_1, hidden_size_2, num_classes, batch_size 
 
 ## model evals
 batch_size = 128
 model_history = torch.load('simple_nn_history.pt')
-trained_model = CategoricalNN(input_size, hidden_size, num_classes)
+trained_model = CategoricalNN(input_size, hidden_size_1,hidden_size_2, num_classes)
 trained_model.load_state_dict(torch.load('nn_pytorch.pth'))
 
 
