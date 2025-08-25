@@ -1,13 +1,13 @@
 ---
 title: |
-  |  \Large Indian Premier League Cricket
+  |  \Large A Comparison of Batter Performance and League Quality Across Domestic T-20 Cricket Leagues
 author: | 
-  | \large Matthew Stuart$^{1,2}$, Hassan Raffique$^{3}$, Leigha DeRango$^1$
+  | \large Matthew Stuart$^{1,2}$, Hassan Raffique$^{3}$, Leigha DeRango$^{1,2}$
   | \large Gregory J. Matthews$^{1,2}$
   | \vspace{-1.1mm}
   | \large $^1$ Department of Mathematics and Statistics, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
   | \large $^2$ Center for Data Science and Consulting, Loyola University Chicago, Chicago, IL, USA \vspace{-1.1mm}
-  | \large $^3$ University of Iowa, Iowa City, IA \vspace{-1.1mm}
+  | \large $^3$ Syracuse University, Syracuse, NY, USA \vspace{-1.1mm}
   | \large $^+$ Corresponding: mstuart1@luc.edu \vspace{-1.1mm}
 abstract: |
   | Wicked Googly \vspace{2mm}
@@ -50,6 +50,10 @@ library(tidyverse)
 theme_set(theme_minimal())
 ```
 
+Abstract:
+
+This paper investigates batter performance across major domestic Twenty20 (T20) cricket leagues to understand how player effectiveness varies by competition context. Using a comprehensive dataset comprising individual match-level batting records from the Indian Premier League (IPL), Big Bash League (BBL), Caribbean Premier League (CPL), Pakistani Super League (PSL), and South Africa 20 (SAT), we fit a multinomial regression model for the number of runs scored per bowled ball accounting for batter and league conditions as well as in-match effects. A hierarchical modeling framework utilizing a Bayesian framework is employed to quantify both player-specific ability and league-specific correlations, allowing for quantifiable player comparisons across leagues and the estimation of league-adjusted performance ratings. Our findings will offer insights into talent evaluation and the transferability of performance across T20 competitions.
+
 \newpage
 
 # Introduction {#sec:intro}
@@ -61,7 +65,10 @@ In the game of cricket, the number of runs scored on a particular pitch typicall
 
 
 ```{r echo = FALSE}
-ipl <- read.csv("../data/IPL_Data.csv")
+bbb <- read.csv("../data/cricket_data.csv")
+bbb <- bbb %>% 
+  filter(year >= 2011) %>%
+  arrange(year)
 library(tidyverse)
 
 #table(ipl$season)
@@ -71,43 +78,43 @@ library(tidyverse)
 ```
 
 ```{r}
-ipl %>% group_by(batting_team, season) %>% summarise(n = n()) %>% group_by(season) %>% summarise(n_teams = n()) 
+bbb %>% group_by(batting_team, year, league) %>% summarise(n = n()) %>% group_by(year,league) %>% summarise(n_teams = n()) %>% pivot_wider(names_from = league,values_from=n_teams,values_fill=NA)
 ```
 
-We have data from the Indian Premier Leauge (IPL) consisting of `r nrow(ipl)` pitches from the 2015 - 2022 seasons. From 2015 - 2021, the league had 8 teams followed by 10 teams in the 2022 season.  
+We have data from the Indian Premier League (IPL),  Big Bash League (BBL), Caribbean Premier League (CPL), Pakistani Super League (PSL), and South Africa 20 (SAT), consisting of `r nrow(bbb)` balls thrown, providing $L = 5$ leagues worth of data. From 2015 - 2021, the IPL, the longest running T20 league, had 8 teams followed by 10 teams in the 2022 season.  In addition, the SAT was first contested in the 2022-2023 season.
 ```{r}
-ipl %>% group_by(season) %>% summarize(n_pitches = n())
+bbb %>% group_by(league,year) %>% summarize(n_pitches = n()) %>% pivot_wider(names_from = league,values_from = n_pitches)
 ```
-Runs in cricket are either scored by running back and forth between the wickets once the ball is put into play (generally resulting in 1 or 2 runs, but theoretically any value is possible).  In addition, a ball that is hit in the air over the boundary (termed a "boundary") is worth 6 runs and if the ball rolls to the boundary or bounces in the field of play and then clears the boundary this is worth 4 runs (termed a "boundary 4").  As a result the distribution of runs scored on a a particular pitch has large peaks are 0 and 1 with a big drop off from 1 to 2.  Values of 3 and 5 are extremely rare accounting for only `r round(mean(ipl$runs_off_bat == 3)*100,2)`% and `r round(mean(ipl$runs_off_bat == 5)*100,2)`% of values across all pitches in our data set.  Values of 4 and 6 spike because of boundaries and boundary fours and together account for `r round(mean(ipl$runs_off_bat == 4)*100 + mean(ipl$runs_off_bat == 6)*100,2)`% of all values.  
+Runs in cricket are either scored by running back and forth between the wickets once the ball is put into play (generally resulting in 1 or 2 runs, but theoretically any value is possible).  In addition, a ball that is hit in the air over the boundary (termed a "boundary") is worth 6 runs and if the ball rolls to the boundary or bounces in the field of play and then clears the boundary this is worth 4 runs (termed a "boundary 4").  As a result the distribution of runs scored on a a particular pitch has large peaks are 0 and 1 with a big drop off from 1 to 2.  Values of 3 and 5 are extremely rare accounting for only `r round(mean(bbb$runs_off_bat == 3)*100,2)`% and `r round(mean(bbb$runs_off_bat == 5)*100,2)`% of values across all pitches in our data set.  Values of 4 and 6 spike because of boundaries and boundary fours and together account for `r round(mean(bbb$runs_off_bat == 4)*100 + mean(bbb$runs_off_bat == 6)*100,2)`% of all values.  
 
 ```{r bar, fig.cap = "Bar Plot of the number of runs scored of a particular ball"}
-ipl %>% ggplot(aes(x = runs_off_bat)) + geom_bar()
+bbb %>% ggplot(aes(x = runs_off_bat)) + geom_bar()
 ```
 <!-- Figure \ref{fig:bar} shows a bar plot.   -->
 
-```{r fig.cap="Can I caption a table?"}
-ipl %>% group_by(striker) %>% summarize(xbar = mean(runs_off_bat), n = n()) %>% arrange(-xbar) %>% filter(n > 500)
+```{r eval=FALSE, fig.cap="Can I caption a table?"}
+bbb %>% group_by(striker) %>% summarize(xbar = mean(runs_off_bat), n = n()) %>% arrange(-xbar) %>% filter(n > 500)
 ```
 
 # Models {#sec:models}
 
-Figure \ref{fig:bar} displays a histogram of the number of runs scored per ball in IPL matches from 2015-2022, consisting of $n = 102,490$ balls thrown. It is likely that a distribution used for modelling counts, such as the Poisson distribution, will violate the necessary assumptions. For this reason, we treat this as a classification problem and fit the number of runs scored per ball, $Y_i$, by a multinomial distribution.  In addition, we exclude any balls that scored three or five runs because of their prementioned rarity of occuring.
+Figure \ref{fig:bar} displays a histogram of the number of runs scored per ball in IPL, BBL, CPL, PSL, and SAT matches from 2011-2024, consisting of $n = 515,486$ balls thrown. It is likely that a distribution used for modelling counts, such as the Poisson distribution, will violate the necessary assumptions. For this reason, we treat this as a classification problem and fit the number of runs scored per ball, $Y_i$, by a multinomial distribution.  In addition, we exclude any balls that scored three or five runs because of their prementioned rarity of occuring. Thus, we are left with a dataset consisting of $n = 513,343$ balls thrown.
 
-We utilize a mixed effects model, incorporating fixed effects for the general in-match situations as well as random effects for the variability of the bowler, batter, and runner. Denote $Y_i$ as the number of runs scored on ball $i = 1,\dots,n$ and $\boldsymbol{X}_i$ as the vector of covariates for the fixed effects of ball $i$. Table \ref{tbl:covariates} provides a description of the covariates for the fixed effects of our model. The model is specified with four logit transformations relative to the event $Y_i = 0$, or, written explicitly
+We utilize a mixed effects model, incorporating fixed effects for the general in-match situations as well as random effects for the variability of the bowler, batter, and runner. Denote $Y_i$ as the number of runs scored on ball $i = 1,\dots,n$ and $\boldsymbol{X}_i$ as the vector of covariates for the fixed effects of ball $i$. Table \@ref(tab:covariates) provides a description of the covariates for the fixed effects of our model. The model is specified with four logit transformations relative to the event $Y_i = 0$, or, written explicitly
 \begin{equation}
-\log\left(\frac{P(Y_i = y | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_y + u_{bowl_i,y} + b_{bat_i,y} + r_{run_i,y} \label{model}
+\log\left(\frac{P(Y_i = k | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_k + u_{k, b_it_il_i} \label{model}
 \end{equation}
-for $y \in \{1,2,4,6\}$ where $\boldsymbol{\beta}_y$ is the fixed effect for scoring $y$ runs and $u_{bowl_i,y}$, $b_{bat_i,y}$, and $r_{run_i,y}$, are the random effects for the bowler, batter, and runner for ball $i$, respectively.  For the random effects, we set
+for $k \in \{1,2,4,6\}$ where $\boldsymbol{\beta}_k$ is the fixed effect for scoring $k$ runs and $u_{k,b_it_il_i}$, is the random effect for the batter($b_i$), year($t_i$), and league($l_i$) for ball $i$, respectively.  For the distribution of the random effects, we denote $\boldsymbol{u}_{k,bt} = [u_{K,bt1},\cdots,u_{K,btL}]^T$ as the $L \times 1$ vector of the random effects for batter $b = 1,\cdots,B$ and $t = 1,\dots,T$.  To encapsulate the between-league correlation of random effects as well as year-to-year autocorrelation, we model the random effects for each $b$ via a multivariate AR1 process.  More specifically, for each $k \in \{1,2,4,6\}$, we set
 \begin{align}
-u_{j,y} & \sim \mathcal{N}(0,\tau_u) \nonumber \\
-b_{k,y} & \sim \mathcal{N}(0,\tau_b) \nonumber \\
-r_{l,y} & \sim \mathcal{N}(0,\tau_r) \label{rand_eff}
+\boldsymbol{u}_{k,bt} & \sim \mathcal{N}(\Phi_k\boldsymbol{u}_{k,b(t-1)},Q_k), \nonumber \\ 
+\boldsymbol{u}_{k,b1} & \sim \mathcal{N}(0,\Sigma_k)\\label{ranefs}\\
 \end{align}
-for $j = 1,\dots,n_{bowl}$, $k = 1,\dots,n_{bat}$, $l = 1,\dots,n_{run}$ where $n_{bowl}$, $n_{bat}$, and $n_{run}$ are the number of unique bowlers, batters, and runners, respectively. In our dataset, $n_{bowl} = 278$, $n_{bat} = 347$, and $n_{run} = 338$.
 
-Given the size of the random effects and that we have 39 fixed effects in our dataset, the size of our unknown parameter vector $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_y, \boldsymbol{u}_y,\boldsymbol{b}_y,\boldsymbol{r}_y,\tau_u,\tau_b,\tau_r: y \in \{1,2,4,6\}\}$ is 4011. To handle such a large parameter vector as well as the complicated structure of our model, we perform a Bayesian analysis on the data with prior distributions and sampling procedure outlined in the supplemental file.
+for $t = 2,\cdots,T$ where $\Phi_k = [\phi_{k,1},\cdots,\phi_{k,L}]$ and $\Sigma_k = \Phi_k^{-1}Q_k\Phi_k^{-1}$, ensuring that the model for $\boldsymbol{u}_{k,bt}$ is second-order stationary.
 
-```{r covariates}
+Given the size of the random effects and that we have 116 fixed effects in our dataset, the size of our free, unknown parameter vector $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_k, \boldsymbol{u}_k,Q_k,\Phi_k: k \in \{1,2,4,6\}\}$ is 360,064. However, not all batter-league-season combinations are observed. To reduce the parametric burden, we only estimate the posterior of $\boldsymbol{u}_k$ for each batter in the years in which they bat. Therefore, in practice, we have 119,164 parameters, reducing our parameteric burden by over 66%. To handle such a large parameter vector as well as the complicated structure of our model, we perform a Bayesian analysis on the data with prior distributions and sampling procedure outlined in the supplemental file.
+
+```{r tab:covariates, results='asis'}
 library(knitr)
 data.frame(Variable = c("First Innings",
                         "Balls Remaining",
@@ -152,13 +159,15 @@ All code for reproducing the analyses in this paper is publicly available at htt
 
 ## Bayesian priors and posterior sampling
 
-In the data analysis outlined in Section \ref{sec:models} of the main manuscript, we set the following prior distributions for the fixed effects $\boldsymbol{\beta}_y$ for $y \in \{1,2,4,6\}$ as well as the variance components of the random effects: $\tau_u$, $\tau_b$, and $\tau_r$:
+In the data analysis outlined in Section \ref{sec:models} of the main manuscript, we set the following prior distributions for the fixed effects $\boldsymbol{\beta}_k$ for $y \in \{1,2,4,6\}$ as well as the variance components of the random effects: $\Phi_k$ and $Q_k$. For ease of use, we decompose $Q_k = \boldsymbol{\tau}_k R_k\boldsymbol{\tau}_k$ where $\boldsymbol{\tau}_k = diag([\tau_{k1},\cdots,\tau_{kl}]^T)$, the vector of standard deviations and $R_k$ is the associated correlation matrix.
 \begin{align}
-\beta_{j,y} & \iid \mathcal{N}(0,10),
-\log \tau_u & \iid \mathcal{N}(0,10),
-\log \tau_b & \iid \mathcal{N}(0,10),
-\log \tau_r & \iid \mathcal{N}(0,10),
+  \beta_{k,p} & \iid \mathcal{N}(0,5),
+  \tau_{k,l} & \iid \mathcal{N}(0,1)I(\tau_{k,l} > 0),
+  \phi_{k,l} & \iid \mathcal{N}(1,1)I(-1 < \phi_{k,l} < 1),
+  R_k & \iid LKJ(2),
 \end{align}
-for $j = 1,\dots,39$. We place a prior on the log-transformation of the $\tau$'s instead of the untransformed $\tau$'s because we sample from the posterior distribution of $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_y, \boldsymbol{u}_y,\boldsymbol{b}_y,\boldsymbol{r}_y,\tau_u,\tau_b,\tau_r: y \in \{1,2,4,6\}\}$ using a Metropolis-adjusted Langevin algorithm (MALA).  MALA is a version of a Metropolis Hastings algorithm where the new states are proposed using overdamped Langevin dynamics.  More specifically, at step $t$ of the algorithm, we sample a proposal $$\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_t + a\nabla \log \pi(\boldsymbol{\Theta}_t|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)$$ where $\pi$ is the functional form of the posterior distribution for $\boldsymbol{\Theta}$ and $a$ is a tuning parameter for the proposal distribution.  The tuning paramter $a$ is chosen via an adaptation of the primal-dual algorithm from @Nesterov2009, which was also utilized in @NUTS.
+for $p = 1,\dots,116$, where LKJ is the Lewandowski-Kurowicka-Joe distribution for correlation matrices (@LKJ). We update the model parameters $\{\boldsymbol{\beta}_k,\boldsymbol{\tau}_k,R_k,\Phi_k: k \in \{1,2,4,6\}\}$ individually using a Metropolis-adjusted Langevin algorithm (MALA).  MALA is a version of a Metropolis Hastings algorithm where the new states are proposed using overdamped Langevin dynamics.  More specifically, at step $r$ of the algorithm, for each parameter $\boldsymbol{\Theta}$, we sample a proposal $$\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_r + a\nabla \log \pi(\boldsymbol{\Theta}_r|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)$$ where $\pi$ is the functional form of the posterior distribution for $\boldsymbol{\Theta}$ and $a$ is a tuning parameter for the proposal distribution.  The tuning paramter $a$ is chosen via an adaptation of the primal-dual algorithm from @Nesterov2009, which was also utilized in @NUTS, to obtain an acceptance probability of 0.574.  For the random effects $\boldsymbol{u}$, we use a Particle Gibbs with ancestor sampling (PGAS) algorithm (@PGAS), which is a variation of sequential Monte Carlo (SMC) algorithms that enables fast mixing of time series data. For the PGAS, we incorporate a PGAS particle size $N = 10$.
+
+
 
 # References

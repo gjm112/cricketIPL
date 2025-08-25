@@ -104,16 +104,17 @@
   urlcolor={cyan},
   pdfcreator={LaTeX via pandoc}}
 
-\title{~\Large Indian Premier League Cricket}
+\title{~\Large A Comparison of Batter Performance and League Quality
+Across Domestic T-20 Cricket Leagues}
 \author{\large Matthew Stuart\(^{1,2}\), Hassan Raffique\(^{3}\), Leigha
-DeRango\(^1\)\\
+DeRango\(^{1,2}\)\\
 \large Gregory J. Matthews\(^{1,2}\)\\
 \vspace{-1.1mm}\\
 \large \(^1\) Department of Mathematics and Statistics, Loyola
 University Chicago, Chicago, IL, USA \vspace{-1.1mm}\\
 \large \(^2\) Center for Data Science and Consulting, Loyola University
 Chicago, Chicago, IL, USA \vspace{-1.1mm}\\
-\large \(^3\) University of Iowa, Iowa City, IA \vspace{-1.1mm}\\
+\large \(^3\) Syracuse University, Syracuse, NY, USA \vspace{-1.1mm}\\
 \large \(^+\) Corresponding:
 \href{mailto:mstuart1@luc.edu}{\nolinkurl{mstuart1@luc.edu}}
 \vspace{-1.1mm}}
@@ -127,6 +128,23 @@ Wicked Googly \vspace{2mm}\\
 \end{abstract}
 
 \newcommand{\iid}{\overset{iid}{\sim}}
+
+Abstract:
+
+This paper investigates batter performance across major domestic
+Twenty20 (T20) cricket leagues to understand how player effectiveness
+varies by competition context. Using a comprehensive dataset comprising
+individual match-level batting records from the Indian Premier League
+(IPL), Big Bash League (BBL), Caribbean Premier League (CPL), Pakistani
+Super League (PSL), and South Africa 20 (SAT), we fit a multinomial
+regression model for the number of runs scored per bowled ball
+accounting for batter and league conditions as well as in-match effects.
+A hierarchical modeling framework utilizing a Bayesian framework is
+employed to quantify both player-specific ability and league-specific
+correlations, allowing for quantifiable player comparisons across
+leagues and the estimation of league-adjusted performance ratings. Our
+findings will offer insights into talent evaluation and the
+transferability of performance across T20 competitions.
 
 \newpage
 
@@ -143,40 +161,57 @@ particular data set).
 \hypertarget{sec:data}{%
 \section{Data}\label{sec:data}}
 
-\begin{longtable}[]{@{}rr@{}}
+\begin{longtable}[]{@{}rrrrrr@{}}
 \toprule\noalign{}
-season & n\_teams \\
+year & BBL & IPL & CPL & PSL & SAT \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-2015 & 8 \\
-2016 & 8 \\
-2017 & 8 \\
-2018 & 8 \\
-2019 & 8 \\
-2021 & 8 \\
-2022 & 10 \\
+2011 & 8 & 10 & NA & NA & NA \\
+2012 & 8 & 9 & NA & NA & NA \\
+2013 & 8 & 9 & 6 & NA & NA \\
+2014 & 8 & 8 & 6 & NA & NA \\
+2015 & 8 & 8 & 6 & 5 & NA \\
+2016 & 8 & 8 & 6 & 5 & NA \\
+2017 & 8 & 8 & 6 & 6 & NA \\
+2018 & 8 & 8 & 6 & 6 & NA \\
+2019 & 8 & 8 & 6 & 6 & NA \\
+2020 & 8 & 8 & 6 & 6 & NA \\
+2021 & 8 & 8 & 6 & 6 & NA \\
+2022 & 8 & 10 & 6 & 6 & 6 \\
+2023 & 8 & 10 & 6 & 6 & 6 \\
+2024 & NA & 10 & 6 & NA & NA \\
 \end{longtable}
 
-We have data from the Indian Premier Leauge (IPL) consisting of 102490
-pitches from the 2015 - 2022 seasons. From 2015 - 2021, the league had 8
-teams followed by 10 teams in the 2022 season.
+We have data from the Indian Premier League (IPL), Big Bash League
+(BBL), Caribbean Premier League (CPL), Pakistani Super League (PSL), and
+South Africa 20 (SAT), consisting of 515486 balls thrown, providing
+\(L = 5\) leagues worth of data. From 2015 - 2021, the IPL, the longest
+running T20 league, had 8 teams followed by 10 teams in the 2022 season.
+In addition, the SAT was first contested in the 2022-2023 season.
 
-\begin{longtable}[]{@{}rr@{}}
+\begin{longtable}[]{@{}rrrrrr@{}}
 \toprule\noalign{}
-season & n\_pitches \\
+year & BBL & CPL & IPL & PSL & SAT \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-2015 & 13641 \\
-2016 & 14096 \\
-2017 & 13849 \\
-2018 & 14286 \\
-2019 & 14293 \\
-2021 & 14413 \\
-2022 & 17912 \\
+2011 & 6459 & NA & 17013 & NA & NA \\
+2012 & 6383 & NA & 17767 & NA & NA \\
+2013 & 7853 & 5385 & 18152 & NA & NA \\
+2014 & 7816 & 6314 & 14288 & NA & NA \\
+2015 & 7586 & 7268 & 13641 & 5413 & NA \\
+2016 & 8259 & 6785 & 14096 & 5418 & NA \\
+2017 & 10263 & 7708 & 13849 & 7728 & NA \\
+2018 & 13576 & 7890 & 14286 & 8077 & NA \\
+2019 & 13503 & 8064 & 14293 & 6144 & NA \\
+2020 & 14125 & 7308 & 14510 & 4289 & NA \\
+2021 & 14234 & 8042 & 14413 & 12978 & NA \\
+2022 & 14168 & 7349 & 17912 & 8209 & 7392 \\
+2023 & 9277 & 7233 & 17863 & 7806 & 7400 \\
+2024 & NA & 2598 & 17103 & NA & NA \\
 \end{longtable}
 
 Runs in cricket are either scored by running back and forth between the
@@ -187,10 +222,10 @@ runs and if the ball rolls to the boundary or bounces in the field of
 play and then clears the boundary this is worth 4 runs (termed a
 ``boundary 4''). As a result the distribution of runs scored on a a
 particular pitch has large peaks are 0 and 1 with a big drop off from 1
-to 2. Values of 3 and 5 are extremely rare accounting for only 0.27\%
-and 0.02\% of values across all pitches in our data set. Values of 4 and
-6 spike because of boundaries and boundary fours and together account
-for 16.75\% of all values.
+to 2. Values of 3 and 5 are extremely rare accounting for only 0.4\% and
+0.02\% of values across all pitches in our data set. Values of 4 and 6
+spike because of boundaries and boundary fours and together account for
+15.82\% of all values.
 
 \begin{figure}
 
@@ -201,117 +236,54 @@ for 16.75\% of all values.
 \caption{Bar Plot of the number of runs scored of a particular ball}\label{fig:bar}
 \end{figure}
 
-\begin{longtable}[]{@{}lrr@{}}
-\toprule\noalign{}
-striker & xbar & n \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-AD Russell & 1.725162 & 1077 \\
-SP Narine & 1.633270 & 529 \\
-AB de Villiers & 1.580799 & 1677 \\
-RR Pant & 1.491333 & 1673 \\
-GJ Maxwell & 1.459386 & 1108 \\
-JC Buttler & 1.455233 & 1720 \\
-JM Bairstow & 1.453149 & 651 \\
-PP Shaw & 1.452991 & 936 \\
-MM Ali & 1.411950 & 636 \\
-DA Warner & 1.407686 & 2394 \\
-BB McCullum & 1.404546 & 880 \\
-RA Tripathi & 1.392540 & 1126 \\
-CA Lynn & 1.387061 & 912 \\
-KD Karthik & 1.382182 & 1549 \\
-KL Rahul & 1.366216 & 2220 \\
-KA Pollard & 1.360360 & 1332 \\
-HH Pandya & 1.359741 & 1237 \\
-CH Gayle & 1.358868 & 1449 \\
-KH Pandya & 1.335895 & 911 \\
-AJ Finch & 1.331909 & 702 \\
-SV Samson & 1.328237 & 1962 \\
-SA Yadav & 1.328021 & 1506 \\
-DR Smith & 1.326897 & 725 \\
-SR Watson & 1.321398 & 1173 \\
-V Kohli & 1.317146 & 2677 \\
-Q de Kock & 1.316218 & 1597 \\
-RV Uthappa & 1.310302 & 1621 \\
-PA Patel & 1.299277 & 1106 \\
-RD Gaikwad & 1.299223 & 772 \\
-N Rana & 1.290755 & 1417 \\
-RG Sharma & 1.276062 & 2072 \\
-MP Stoinis & 1.275311 & 563 \\
-MA Agarwal & 1.268727 & 1068 \\
-YK Pathan & 1.268182 & 880 \\
-DJ Hooda & 1.266741 & 896 \\
-MC Henriques & 1.263415 & 615 \\
-AT Rayudu & 1.261749 & 1681 \\
-Mandeep Singh & 1.255924 & 633 \\
-F du Plessis & 1.253756 & 1797 \\
-SK Raina & 1.253129 & 1758 \\
-Ishan Kishan & 1.250231 & 1083 \\
-DA Miller & 1.247285 & 1197 \\
-MS Dhoni & 1.245250 & 1737 \\
-AR Patel & 1.244792 & 768 \\
-Shubman Gill & 1.244672 & 1173 \\
-S Dhawan & 1.232499 & 2757 \\
-KK Nair & 1.228202 & 929 \\
-V Shankar & 1.226306 & 517 \\
-SPD Smith & 1.225386 & 1229 \\
-AM Rahane & 1.221398 & 1888 \\
-KS Williamson & 1.219412 & 1463 \\
-MK Pandey & 1.214101 & 1546 \\
-SS Iyer & 1.213441 & 1860 \\
-Yuvraj Singh & 1.209960 & 743 \\
-JP Duminy & 1.209434 & 530 \\
-D Padikkal & 1.194234 & 659 \\
-KM Jadhav & 1.191936 & 620 \\
-WP Saha & 1.188027 & 1186 \\
-LMP Simmons & 1.183074 & 579 \\
-G Gambhir & 1.168046 & 1208 \\
-RA Jadeja & 1.152715 & 884 \\
-M Vijay & 1.150443 & 678 \\
-\end{longtable}
-
 \hypertarget{sec:models}{%
 \section{Models}\label{sec:models}}
 
 Figure \ref{fig:bar} displays a histogram of the number of runs scored
-per ball in IPL matches from 2015-2022, consisting of \(n = 102,490\)
-balls thrown. It is likely that a distribution used for modelling
-counts, such as the Poisson distribution, will violate the necessary
-assumptions. For this reason, we treat this as a classification problem
-and fit the number of runs scored per ball, \(Y_i\), by a multinomial
-distribution. In addition, we exclude any balls that scored three or
-five runs because of their prementioned rarity of occuring.
+per ball in IPL, BBL, CPL, PSL, and SAT matches from 2011-2024,
+consisting of \(n = 515,486\) balls thrown. It is likely that a
+distribution used for modelling counts, such as the Poisson
+distribution, will violate the necessary assumptions. For this reason,
+we treat this as a classification problem and fit the number of runs
+scored per ball, \(Y_i\), by a multinomial distribution. In addition, we
+exclude any balls that scored three or five runs because of their
+prementioned rarity of occuring. Thus, we are left with a dataset
+consisting of \(n = 513,343\) balls thrown.
 
 We utilize a mixed effects model, incorporating fixed effects for the
 general in-match situations as well as random effects for the
 variability of the bowler, batter, and runner. Denote \(Y_i\) as the
 number of runs scored on ball \(i = 1,\dots,n\) and \(\boldsymbol{X}_i\)
 as the vector of covariates for the fixed effects of ball \(i\). Table
-\ref{tbl:covariates} provides a description of the covariates for the
+@ref(tab:covariates) provides a description of the covariates for the
 fixed effects of our model. The model is specified with four logit
 transformations relative to the event \(Y_i = 0\), or, written
 explicitly \begin{equation}
-\log\left(\frac{P(Y_i = y | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_y + u_{bowl_i,y} + b_{bat_i,y} + r_{run_i,y} \label{model}
-\end{equation} for \(y \in \{1,2,4,6\}\) where \(\boldsymbol{\beta}_y\)
-is the fixed effect for scoring \(y\) runs and \(u_{bowl_i,y}\),
-\(b_{bat_i,y}\), and \(r_{run_i,y}\), are the random effects for the
-bowler, batter, and runner for ball \(i\), respectively. For the random
-effects, we set \begin{align}
-u_{j,y} & \sim \mathcal{N}(0,\tau_u) \nonumber \\
-b_{k,y} & \sim \mathcal{N}(0,\tau_b) \nonumber \\
-r_{l,y} & \sim \mathcal{N}(0,\tau_r) \label{rand_eff}
-\end{align} for \(j = 1,\dots,n_{bowl}\), \(k = 1,\dots,n_{bat}\),
-\(l = 1,\dots,n_{run}\) where \(n_{bowl}\), \(n_{bat}\), and \(n_{run}\)
-are the number of unique bowlers, batters, and runners, respectively. In
-our dataset, \(n_{bowl} = 278\), \(n_{bat} = 347\), and
-\(n_{run} = 338\).
+\log\left(\frac{P(Y_i = k | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_k + u_{k, b_it_il_i} \label{model}
+\end{equation} for \(k \in \{1,2,4,6\}\) where \(\boldsymbol{\beta}_k\)
+is the fixed effect for scoring \(k\) runs and \(u_{k,b_it_il_i}\), is
+the random effect for the batter(\(b_i\)), year(\(t_i\)), and
+league(\(l_i\)) for ball \(i\), respectively. For the distribution of
+the random effects, we denote
+\(\boldsymbol{u}_{k,bt} = [u_{K,bt1},\cdots,u_{K,btL}]^T\) as the
+\(L \times 1\) vector of the random effects for batter
+\(b = 1,\cdots,B\) and \(t = 1,\dots,T\). To encapsulate the
+between-league correlation of random effects as well as year-to-year
+autocorrelation, we model the random effects for each \(b\) via a
+multivariate AR1 process. More specifically, for each
+\(k \in \{1,2,4,6\}\), we set \begin{align}
+\boldsymbol{u}_{k,bt} & \sim \mathcal{N}(\Phi_k\boldsymbol{u}_{k,b(t-1)},Q_k), \nonumber \\ 
+\boldsymbol{u}_{k,b1} & \sim \mathcal{N}(0,\Sigma_k)\\label{ranefs}\\
+\end{align}
 
-Given the size of the random effects and that we have 39 fixed effects
-in our dataset, the size of our unknown parameter vector
-\(\boldsymbol{\Theta} = \{\boldsymbol{\beta}_y, \boldsymbol{u}_y,\boldsymbol{b}_y,\boldsymbol{r}_y,\tau_u,\tau_b,\tau_r: y \in \{1,2,4,6\}\}\)
-is 4011. To handle such a large parameter vector as well as the
+for \(t = 2,\cdots,T\) where \(\Phi_k = [\phi_{k,1},\cdots,\phi_{k,L}]\)
+and \(\Sigma_k = \Phi_k^{-1}Q_k\Phi_k^{-1}\), ensuring that the model
+for \(\boldsymbol{u}_{k,bt}\) is second-order stationary.
+
+Given the size of the random effects and that we have 116 fixed effects
+in our dataset, the size of our free, unknown parameter vector
+\(\boldsymbol{\Theta} = \{\boldsymbol{\beta}_k, \boldsymbol{u}_k,Q_k,\Phi_k: k \in \{1,2,4,6\}\}\)
+is 24588. To handle such a large parameter vector as well as the
 complicated structure of our model, we perform a Bayesian analysis on
 the data with prior distributions and sampling procedure outlined in the
 supplemental file.
@@ -373,28 +345,35 @@ sampling}\label{bayesian-priors-and-posterior-sampling}}
 
 In the data analysis outlined in Section \ref{sec:models} of the main
 manuscript, we set the following prior distributions for the fixed
-effects \(\boldsymbol{\beta}_y\) for \(y \in \{1,2,4,6\}\) as well as
-the variance components of the random effects: \(\tau_u\), \(\tau_b\),
-and \(\tau_r\): \begin{align}
-\beta_{j,y} & \overset{iid}{\sim}\mathcal{N}(0,10),
-\log \tau_u & \overset{iid}{\sim}\mathcal{N}(0,10),
-\log \tau_b & \overset{iid}{\sim}\mathcal{N}(0,10),
-\log \tau_r & \overset{iid}{\sim}\mathcal{N}(0,10),
-\end{align} for \(j = 1,\dots,39\). We place a prior on the
-log-transformation of the \(\tau\)'s instead of the untransformed
-\(\tau\)'s because we sample from the posterior distribution of
-\(\boldsymbol{\Theta} = \{\boldsymbol{\beta}_y, \boldsymbol{u}_y,\boldsymbol{b}_y,\boldsymbol{r}_y,\tau_u,\tau_b,\tau_r: y \in \{1,2,4,6\}\}\)
-using a Metropolis-adjusted Langevin algorithm (MALA). MALA is a version
-of a Metropolis Hastings algorithm where the new states are proposed
-using overdamped Langevin dynamics. More specifically, at step \(t\) of
-the algorithm, we sample a proposal
-\[\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_t + a\nabla \log \pi(\boldsymbol{\Theta}_t|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)\]
+effects \(\boldsymbol{\beta}_k\) for \(y \in \{1,2,4,6\}\) as well as
+the variance components of the random effects: \(\Phi_k\) and \(Q_k\).
+For ease of use, we decompose
+\(Q_k = \boldsymbol{\tau}_k R_k\boldsymbol{\tau}_k\) where
+\(\boldsymbol{\tau}_k = diag([\tau_{k1},\cdots,\tau_{kl}]^T)\), the
+vector of standard deviations and \(R_k\) is the associated correlation
+matrix. \begin{align}
+  \beta_{k,p} & \overset{iid}{\sim}\mathcal{N}(0,5),
+  \tau_{k,l} & \overset{iid}{\sim}\mathcal{N}(0,1)I(\tau_{k,l} > 0),
+  \phi_{k,l} & \overset{iid}{\sim}\mathcal{N}(1,1)I(-1 < \phi_{k,l} < 1),
+  R_k & \overset{iid}{\sim}LKJ(2),
+\end{align} for \(p = 1,\dots,116\), where LKJ is the
+Lewandowski-Kurowicka-Joe distribution for correlation matrices
+(Lewandowski, Kurowicka, and Joe (\protect\hyperlink{ref-LKJ}{2009})).
+We update the model parameters
+\(\{\boldsymbol{\beta}_k,\boldsymbol{\tau}_k,R_k,\Phi_k: k \in \{1,2,4,6\}\}\)
+individually using a Metropolis-adjusted Langevin algorithm (MALA). MALA
+is a version of a Metropolis Hastings algorithm where the new states are
+proposed using overdamped Langevin dynamics. More specifically, at step
+\(r\) of the algorithm, for each parameter \(\boldsymbol{\Theta}\), we
+sample a proposal
+\[\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_r + a\nabla \log \pi(\boldsymbol{\Theta}_r|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)\]
 where \(\pi\) is the functional form of the posterior distribution for
 \(\boldsymbol{\Theta}\) and \(a\) is a tuning parameter for the proposal
 distribution. The tuning paramter \(a\) is chosen via an adaptation of
 the primal-dual algorithm from Nesterov
 (\protect\hyperlink{ref-Nesterov2009}{2009}), which was also utilized in
-Homan and Gelman (\protect\hyperlink{ref-NUTS}{2014}).
+Homan and Gelman (\protect\hyperlink{ref-NUTS}{2014}), to obtain an
+acceptance probability of 0.574.
 
 \hypertarget{references}{%
 \section*{References}\label{references}}
@@ -406,6 +385,13 @@ Homan and Gelman (\protect\hyperlink{ref-NUTS}{2014}).
 Homan, Matthew D., and Andrew Gelman. 2014. {``The No-u-Turn Sampler:
 Adaptively Setting Path Lengths in Hamiltonian Monte Carlo.''} \emph{J.
 Mach. Learn. Res.} 15 (1): 1593--623.
+
+\leavevmode\vadjust pre{\hypertarget{ref-LKJ}{}}%
+Lewandowski, Daniel, Dorota Kurowicka, and Harry Joe. 2009.
+{``Generating Random Correlation Matrices Based on Vines and Extended
+Onion Method.''} \emph{Journal of Multivariate Analysis} 100 (9):
+1989--2001.
+https://doi.org/\url{https://doi.org/10.1016/j.jmva.2009.04.008}.
 
 \leavevmode\vadjust pre{\hypertarget{ref-Nesterov2009}{}}%
 Nesterov, Yurii. 2009. {``Primal-Dual Subgradient Methods for Convex
