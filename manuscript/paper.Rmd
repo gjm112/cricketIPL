@@ -67,7 +67,7 @@ In the game of cricket, the number of runs scored on a particular pitch typicall
 ```{r echo = FALSE}
 bbb <- read.csv("../data/cricket_data.csv")
 bbb <- bbb %>% 
-  filter(year >= 2011) %>%
+  filter(year >= 2015) %>%
   arrange(year)
 library(tidyverse)
 
@@ -98,21 +98,24 @@ bbb %>% group_by(striker) %>% summarize(xbar = mean(runs_off_bat), n = n()) %>% 
 
 # Models {#sec:models}
 
-Figure \ref{fig:bar} displays a histogram of the number of runs scored per ball in IPL, BBL, CPL, PSL, and SAT matches from 2011-2024, consisting of $n = 515,486$ balls thrown. It is likely that a distribution used for modelling counts, such as the Poisson distribution, will violate the necessary assumptions. For this reason, we treat this as a classification problem and fit the number of runs scored per ball, $Y_i$, by a multinomial distribution.  In addition, we exclude any balls that scored three or five runs because of their prementioned rarity of occuring. Thus, we are left with a dataset consisting of $n = 513,343$ balls thrown.
+Figure \ref{fig:bar} displays a histogram of the number of runs scored per ball in IPL, BBL, CPL, PSL, and SAT matches from 2015-2024, consisting of $n = 408,056$ balls thrown. It is likely that a distribution used for modelling counts, such as the Poisson distribution, will violate the necessary assumptions. For this reason, we treat this as a classification problem and fit the number of runs scored per ball, $Y_i$, by a multinomial distribution.  In addition, we exclude any balls that scored three or five runs because of their prementioned rarity of occuring. Thus, we are left with a dataset consisting of $n = 406,454$ balls thrown.
 
 We utilize a mixed effects model, incorporating fixed effects for the general in-match situations as well as random effects for the variability of the bowler, batter, and runner. Denote $Y_i$ as the number of runs scored on ball $i = 1,\dots,n$ and $\boldsymbol{X}_i$ as the vector of covariates for the fixed effects of ball $i$. Table \@ref(tab:covariates) provides a description of the covariates for the fixed effects of our model. The model is specified with four logit transformations relative to the event $Y_i = 0$, or, written explicitly
 \begin{equation}
-\log\left(\frac{P(Y_i = k | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_k + u_{k, b_it_il_i} \label{model}
+\log\left(\frac{P(Y_i = k | \boldsymbol{X}_i)}{P(Y_i = 0 | \boldsymbol{X}_i)}\right) = \boldsymbol{X}_i \boldsymbol{\beta}_k + u_{k, b_it_i} + s_{k,v_i} \label{model}
 \end{equation}
-for $k \in \{1,2,4,6\}$ where $\boldsymbol{\beta}_k$ is the fixed effect for scoring $k$ runs and $u_{k,b_it_il_i}$, is the random effect for the batter($b_i$), year($t_i$), and league($l_i$) for ball $i$, respectively.  For the distribution of the random effects, we denote $\boldsymbol{u}_{k,bt} = [u_{K,bt1},\cdots,u_{K,btL}]^T$ as the $L \times 1$ vector of the random effects for batter $b = 1,\cdots,B$ and $t = 1,\dots,T$.  To encapsulate the between-league correlation of random effects as well as year-to-year autocorrelation, we model the random effects for each $b$ via a multivariate AR1 process.  More specifically, for each $k \in \{1,2,4,6\}$, we set
+for $k \in \{1,2,4,6\}$ where $\boldsymbol{\beta}_k$ is the fixed effect for scoring $k$ runs, $u_{k,b_it_i}$, is the random effect for the batter($b_i$) and year($t_i$), and $s_{k,v_i}$ is the random effect for venue for ball $i$, respectively.  For the batter random effects ${u}_{k,bt}$, we model the random effects for each $b$ via an AR1 process.  More specifically, for each $k \in \{1,2,4,6\}$, we set
 \begin{align}
-\boldsymbol{u}_{k,bt} & \sim \mathcal{N}(\Phi_k\boldsymbol{u}_{k,b(t-1)},Q_k), \nonumber \\ 
-\boldsymbol{u}_{k,b1} & \sim \mathcal{N}(0,\Sigma_k)\\label{ranefs}\\
+{u}_{k,bt} & \sim \mathcal{N}(\rho_k {u}_{k,b(t-1)},\sigma_{k}), \nonumber \\ 
+{u}_{k,b1} & \sim \mathcal{N}(0,\frac{\sigma_{k}}{1-\rho_k^2})\label{ranefs_bat}
 \end{align}
 
-for $t = 2,\cdots,T$ where $\Phi_k = [\phi_{k,1},\cdots,\phi_{k,L}]$ and $\Sigma_k = \Phi_k^{-1}Q_k\Phi_k^{-1}$, ensuring that the model for $\boldsymbol{u}_{k,bt}$ is second-order stationary.
+for $t = 2,\cdots,T$. For the random effects for venue, we assume
+\begin{align}
+{s}_{k,v} & \sim \mathcal{N}(0,\tau_{k}), \label{ranefs_ven}
+\end{align}
 
-Given the size of the random effects and that we have 116 fixed effects in our dataset, the size of our free, unknown parameter vector $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_k, \boldsymbol{u}_k,Q_k,\Phi_k: k \in \{1,2,4,6\}\}$ is 360,064. However, not all batter-league-season combinations are observed. To reduce the parametric burden, we only estimate the posterior of $\boldsymbol{u}_k$ for each batter in the years in which they bat. Therefore, in practice, we have 119,164 parameters, reducing our parameteric burden by over 66%. To handle such a large parameter vector as well as the complicated structure of our model, we perform a Bayesian analysis on the data with prior distributions and sampling procedure outlined in the supplemental file.
+Given the size of the random effects, the size of our free, unknown parameter vector $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_k,\boldsymbol{u}_k, \boldsymbol{v}_k,\rho_k,\sigma_k,\tau_k: k \in \{1,2,4,6\}\}$ is 43,740. To handle such a large parameter vector as well as the complicated structure of our model, we perform a Bayesian analysis on the data with prior distributions and sampling procedure outlined in the supplemental file.<!-- However, not all batter-league-season combinations are observed. To reduce the parametric burden, we only estimate the posterior of $\boldsymbol{u}_k$ for each batter in the years in which they bat. Therefore, in practice, we have 119,164 parameters, reducing our parameteric burden by over 66%.-->  
 
 ```{r tab:covariates, results='asis'}
 library(knitr)
@@ -121,13 +124,13 @@ data.frame(Variable = c("First Innings",
                         "Runs to Win",
                         "Runs Scored",
                         "Wickets Lost",
-                        "Venue"),
+                        "League"),
            `Variable Description` = c("Indicator for the 1st innings of the match",
                                       "Number of balls remaining in the innings",
                                       "Number of runs remaining to score to win the match (2nd innings)",
                                       "Number of runs scored in the innings up to current ball",
                                       "Number of wickets lost in the innings up to current ball",
-                                      "Grounds in which the match is played")) %>% kable(caption = "Description of covariates for fixed effects of model")
+                                      "League in which the match is played")) %>% kable(caption = "Description of covariates for fixed effects of model")
 ```
 
 <!-- Let $r_i$ be the number of runs scored on the $i$-th ball with $i=1,\cdots,n$ and $r_i \in \left\{0,1,\cdots,6\right\}$.  Then define ${\bf y_{i}} = \left(y_{i0},\ldots,y_{i6}\right)$ where $y_{ij} = I(r_i = j), \forall j = 0, \cdots, 6$ and $I(.)$ is the indicator function.  We then model:  -->
@@ -159,14 +162,15 @@ All code for reproducing the analyses in this paper is publicly available at htt
 
 ## Bayesian priors and posterior sampling
 
-In the data analysis outlined in Section \ref{sec:models} of the main manuscript, we set the following prior distributions for the fixed effects $\boldsymbol{\beta}_k$ for $y \in \{1,2,4,6\}$ as well as the variance components of the random effects: $\Phi_k$ and $Q_k$. For ease of use, we decompose $Q_k = \boldsymbol{\tau}_k R_k\boldsymbol{\tau}_k$ where $\boldsymbol{\tau}_k = diag([\tau_{k1},\cdots,\tau_{kl}]^T)$, the vector of standard deviations and $R_k$ is the associated correlation matrix.
+In the data analysis outlined in Section \ref{sec:models} of the main manuscript, we set the following prior distributions:
 \begin{align}
-  \beta_{k,p} & \iid \mathcal{N}(0,5),
-  \tau_{k,l} & \iid \mathcal{N}(0,1)I(\tau_{k,l} > 0),
-  \phi_{k,l} & \iid \mathcal{N}(1,1)I(-1 < \phi_{k,l} < 1),
-  R_k & \iid LKJ(2),
+  \beta_{p,k} & \iid \mathcal{N}(0,5),\nonumber\\
+  \sigma_{k} & \iid \mathcal{N}(0,1)I(\sigma_{k} > 0),\nonumber\\
+  \tau_{k} & \iid \mathcal{N}(0,1)I(\tau_{k} > 0),\nonumber\\
+  \rho_{k} & \iid \mathcal{N}(1,1)I(-1 < \rho_{k} < 1),
 \end{align}
-for $p = 1,\dots,116$, where LKJ is the Lewandowski-Kurowicka-Joe distribution for correlation matrices (@LKJ). We update the model parameters $\{\boldsymbol{\beta}_k,\boldsymbol{\tau}_k,R_k,\Phi_k: k \in \{1,2,4,6\}\}$ individually using a Metropolis-adjusted Langevin algorithm (MALA).  MALA is a version of a Metropolis Hastings algorithm where the new states are proposed using overdamped Langevin dynamics.  More specifically, at step $r$ of the algorithm, for each parameter $\boldsymbol{\Theta}$, we sample a proposal $$\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_r + a\nabla \log \pi(\boldsymbol{\Theta}_r|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)$$ where $\pi$ is the functional form of the posterior distribution for $\boldsymbol{\Theta}$ and $a$ is a tuning parameter for the proposal distribution.  The tuning paramter $a$ is chosen via an adaptation of the primal-dual algorithm from @Nesterov2009, which was also utilized in @NUTS, to obtain an acceptance probability of 0.574.  For the random effects $\boldsymbol{u}$, we use a Particle Gibbs with ancestor sampling (PGAS) algorithm (@PGAS), which is a variation of sequential Monte Carlo (SMC) algorithms that enables fast mixing of time series data. For the PGAS, we incorporate a PGAS particle size $N = 10$.
+for $p = 1,\dots,10$ and $k \in \{1,2,4,6\}$. We used STAN to obtain 4000 posterior draws from our parameter set $\boldsymbol{\Theta} = \{\boldsymbol{\beta}_k,\boldsymbol{u}_k, \boldsymbol{v}_k,\rho_k,\sigma_k,\tau_k: k \in \{1,2,4,6\}\}$
+<!-- , where LKJ is the Lewandowski-Kurowicka-Joe distribution for correlation matrices (@LKJ). We update the model parameters $\{\boldsymbol{\beta}_k,\boldsymbol{\tau}_k,R_k,\Phi_k: k \in \{1,2,4,6\}\}$ individually using a Metropolis-adjusted Langevin algorithm (MALA).  MALA is a version of a Metropolis Hastings algorithm where the new states are proposed using overdamped Langevin dynamics.  More specifically, at step $r$ of the algorithm, for each parameter $\boldsymbol{\Theta}$, we sample a proposal $$\boldsymbol{\Theta}^* \sim \mathcal{N}\left(\boldsymbol{\Theta}_r + a\nabla \log \pi(\boldsymbol{\Theta}_r|\boldsymbol{y},\boldsymbol{X}), \sqrt{2a}\right)$$ where $\pi$ is the functional form of the posterior distribution for $\boldsymbol{\Theta}$ and $a$ is a tuning parameter for the proposal distribution.  The tuning paramter $a$ is chosen via an adaptation of the primal-dual algorithm from @Nesterov2009, which was also utilized in @NUTS, to obtain an acceptance probability of 0.574.  For the random effects $\boldsymbol{u}$, we use a Particle Gibbs with ancestor sampling (PGAS) algorithm (@PGAS), which is a variation of sequential Monte Carlo (SMC) algorithms that enables fast mixing of time series data. For the PGAS, we incorporate a PGAS particle size $N = 10$. -->
 
 
 
